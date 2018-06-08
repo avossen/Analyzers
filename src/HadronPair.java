@@ -20,7 +20,9 @@ public class HadronPair {
 
 	protected Vector3 Ph;
 	protected double pT;
+	protected double pTLab;
 	protected Vector3 vecQ;
+	protected Vector3 vecQLab;
 	protected Vector3 vecL;
 	protected double m_W;
 
@@ -58,6 +60,9 @@ public class HadronPair {
 	public double getPt() {
 		return pT;
 	}
+	public double getPtLab() {
+		return pTLab;
+	}
 
 	public double getMass() {
 		return m_mass;
@@ -77,12 +82,14 @@ public class HadronPair {
 		lvL.boost(breitBoost);
 		vecQ = lvQ.vect();
 		vecL = lvL.vect();
+		vecQLab=new Vector3(lv_q.vect());
+		vecQLab.unit();
 		compute();
 
 	}
 
 	public void compute() {
-
+		
 		LorentzVector pionPair = new LorentzVector(m_h1.px() + m_h2.px(), m_h1.py() + m_h2.py(), m_h1.pz() + m_h2.pz(),
 				m_h1.e() + m_h2.e());
 		m_mass = pionPair.mass();
@@ -92,8 +99,16 @@ public class HadronPair {
 		// should already be Pht
 		double px = boostedPair.vect().x();
 		double py = boostedPair.vect().y();
+		
+		//I guess the photon is not along the z axis after all
 		double phT = Math.sqrt(px * px + py * py);
 		pT = phT;
+		double otherPt=vecQ.cross(pionPair.vect()).mag();
+		//System.out.println("pt " + pT + " or "+otherPT);
+		pT=otherPt;
+		//mag of cross product should be sin(theta)*|pionPair| (photon vector is unit vector
+		pTLab=vecQLab.cross(pionPair.vect()).mag();
+		//System.out.println("pt " + pT + " or "+pTLab);
 		xF = boostedPair.pz() / m_W;
 		z = pionPair.e() / m_qE;
 
@@ -104,7 +119,7 @@ public class HadronPair {
 		Vector3 pairBoostVect=boostedPair.boostVector();
 		pairBoostVect.negative();
 		vh1T.boost(pairBoostVect);
-		m_theta=vh1T.vect().theta(boostedPair.vect());
+		m_theta=Math.acos(vh1T.vect().dot(boostedPair.vect())/(vh1T.vect().mag()*boostedPair.vect().mag()));
 		vh1.boost(m_breitBoost);
 		LorentzVector vh2=new LorentzVector(m_h2.px(),m_h2.py(),m_h2.pz(),m_h2.e());
 		vh2.boost(m_breitBoost);
