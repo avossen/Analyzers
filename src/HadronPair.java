@@ -17,12 +17,14 @@ public class HadronPair {
 
 	protected double z;
 	protected double xF;
+	protected double missingMass;
 
 	protected Vector3 Ph;
 	protected double pT;
 	protected double pTLab;
 	protected Vector3 vecQ;
 	protected Vector3 vecQLab;
+	protected LorentzVector lvQLab;
 	protected Vector3 vecL;
 	protected double m_W;
 
@@ -32,6 +34,10 @@ public class HadronPair {
 	protected MyParticle m_h2;
 	Vector3 m_breitBoost;
 	protected double m_qE;
+
+	public double getMissingMass() {
+		return missingMass;
+	}
 
 	public double getTheta() {
 		return m_theta;
@@ -60,6 +66,7 @@ public class HadronPair {
 	public double getPt() {
 		return pT;
 	}
+
 	public double getPtLab() {
 		return pTLab;
 	}
@@ -69,7 +76,8 @@ public class HadronPair {
 	}
 
 	// takes virtual photon and Was parameter
-	public HadronPair(MyParticle h1, MyParticle h2, LorentzVector lv_q, LorentzVector lv_l, double W, Vector3 breitBoost) {
+	public HadronPair(MyParticle h1, MyParticle h2, LorentzVector lv_q, LorentzVector lv_l, double W,
+			Vector3 breitBoost) {
 
 		m_h1 = h1;
 		m_h2 = h2;
@@ -77,21 +85,31 @@ public class HadronPair {
 		m_W = W;
 		m_qE = lv_q.e();
 		LorentzVector lvQ = new LorentzVector(lv_q);
+		lvQLab = new LorentzVector(lv_q);
 		LorentzVector lvL = new LorentzVector(lv_l);
 		lvQ.boost(breitBoost);
 		lvL.boost(breitBoost);
 		vecQ = lvQ.vect();
 		vecL = lvL.vect();
-		vecQLab=new Vector3(lv_q.vect());
+		vecQLab = new Vector3(lv_q.vect());
 		vecQLab.unit();
 		compute();
 
 	}
 
 	public void compute() {
-		
+
 		LorentzVector pionPair = new LorentzVector(m_h1.px() + m_h2.px(), m_h1.py() + m_h2.py(), m_h1.pz() + m_h2.pz(),
 				m_h1.e() + m_h2.e());
+		double m_p = 0.938;
+		LorentzVector protonLab = new LorentzVector();
+		protonLab.setPxPyPzM(0.0, 0.0, 0.0, m_p);
+		LorentzVector tmp = new LorentzVector(protonLab);
+		tmp.add(protonLab);
+		tmp.add(lvQLab);
+		tmp.sub(pionPair);
+		missingMass = tmp.mass();
+
 		m_mass = pionPair.mass();
 		LorentzVector boostedPair = new LorentzVector(pionPair);
 		boostedPair.boost(m_breitBoost);
@@ -99,35 +117,33 @@ public class HadronPair {
 		// should already be Pht
 		double px = boostedPair.vect().x();
 		double py = boostedPair.vect().y();
-		
-		//I guess the photon is not along the z axis after all
+
+		// I guess the photon is not along the z axis after all
 		double phT = Math.sqrt(px * px + py * py);
 		pT = phT;
-		double otherPt=vecQ.cross(pionPair.vect()).mag();
-		//System.out.println("pt " + pT + " or "+otherPT);
-		pT=otherPt;
-		//mag of cross product should be sin(theta)*|pionPair| (photon vector is unit vector
-		pTLab=vecQLab.cross(pionPair.vect()).mag();
-		//System.out.println("pt " + pT + " or "+pTLab);
+		double otherPt = vecQ.cross(pionPair.vect()).mag();
+		// System.out.println("pt " + pT + " or "+otherPT);
+		pT = otherPt;
+		// mag of cross product should be sin(theta)*|pionPair| (photon vector is unit
+		// vector
+		pTLab = vecQLab.cross(pionPair.vect()).mag();
+		// System.out.println("pt " + pT + " or "+pTLab);
 		xF = boostedPair.pz() / m_W;
 		z = pionPair.e() / m_qE;
 
 		Vector3 vecQUnit = new Vector3();
 		vecQUnit.setMagThetaPhi(1.0, vecQ.theta(), vecQ.phi());
-		LorentzVector vh1=new LorentzVector(m_h1.px(),m_h1.py(),m_h1.pz(),m_h1.e());
-		LorentzVector vh1T=new LorentzVector(vh1);
-		Vector3 pairBoostVect=boostedPair.boostVector();
+		LorentzVector vh1 = new LorentzVector(m_h1.px(), m_h1.py(), m_h1.pz(), m_h1.e());
+		LorentzVector vh1T = new LorentzVector(vh1);
+		Vector3 pairBoostVect = boostedPair.boostVector();
 		pairBoostVect.negative();
 		vh1T.boost(pairBoostVect);
-		m_theta=Math.acos(vh1T.vect().dot(boostedPair.vect())/(vh1T.vect().mag()*boostedPair.vect().mag()));
+		m_theta = Math.acos(vh1T.vect().dot(boostedPair.vect()) / (vh1T.vect().mag() * boostedPair.vect().mag()));
 		vh1.boost(m_breitBoost);
-		LorentzVector vh2=new LorentzVector(m_h2.px(),m_h2.py(),m_h2.pz(),m_h2.e());
+		LorentzVector vh2 = new LorentzVector(m_h2.px(), m_h2.py(), m_h2.pz(), m_h2.e());
 		vh2.boost(m_breitBoost);
-		
-		
-		
-		
-		Vector3 vecRt=new Vector3(vh1.vect());
+
+		Vector3 vecRt = new Vector3(vh1.vect());
 		vecRt.sub(vh2.vect());
 		Vector3 vecPh = boostedPair.vect();
 		Vector3 vT = vecQUnit.cross(vecL);

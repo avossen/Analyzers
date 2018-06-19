@@ -38,6 +38,7 @@ public class SimpleAnalyzer {
 	protected H1F hLambdaMassXfCutRes;
 	protected H1F hLambdaXfRes;
 	protected H2F hXfVsZRes;
+	public boolean isMC;
 
 	protected H1F hPiPiMass;
 	protected H1F hPiPiMassXfCut;
@@ -54,6 +55,7 @@ public class SimpleAnalyzer {
 	protected H1F hDiPionPPerp2;
 	protected H1F hDiPionPhiH;
 	protected H1F hDiPionPhiR;
+	protected H1F hDiPionMissingMass;
 	
 	protected H1F hX;
 	protected H1F hQ2;
@@ -63,7 +65,14 @@ public class SimpleAnalyzer {
 	
 	protected int matchCounter;
 	protected int noMatchCounter;
-
+	protected int m_numGoodFilterEvts;	
+	protected int m_numEvtsWithPIDChi2;
+	protected int m_numEvtsWithKinCuts;
+	protected int m_numEventsWithBanks;
+	//if one only wants to know how many events have at least one pair in it
+	protected boolean m_EvtCountedKinCuts;
+	protected boolean m_EvtCountedPIDChi2;
+	protected boolean evtFulfillsMissingMass;
 
 	protected final double m_pi = 0.1396;
 	protected NovelBaseFitter novel_fitter;
@@ -77,11 +86,16 @@ public class SimpleAnalyzer {
 			System.exit(0);
 		}
 		SimpleAnalyzer analyzer = new SimpleAnalyzer();
+		analyzer.isMC=false;
 		analyzer.analyze(args);
 		analyzer.plot();
 	}
 
 	public void analyze(String[] args) {
+		m_numGoodFilterEvts=0;
+		m_numEvtsWithPIDChi2=0;
+		m_numEvtsWithKinCuts=0;
+		m_numEventsWithBanks=0;
 		hLambdaMass = new H1F("lambdaMass", "lambdaMass", 100, 1.0, 1.2);
 		hTrueLambdaMass = new H1F("trueLambdaMass", "trueLambdaMass", 100, 1.0, 2.0);
 		hLambdaMassXfCut = new H1F("lambdaMass", "lambdaMass", 100, 1.0, 2.0);
@@ -118,21 +132,24 @@ public class SimpleAnalyzer {
 		
 		hDiPionPhiH=new H1F("diPIonPhiH","diPionPhiH",100,0.0,2*Math.PI);
 		hDiPionPhiR=new H1F("diPIonPhiR","diPionPhiR",100,0.0,2*Math.PI);
+		
+		hDiPionMissingMass= new H1F("diPIonMissingMass","diPionMissingMass",100,0,6.0);
 
 		int numLambdas=0;
 		HipoDataSource reader = new HipoDataSource();
 		// define fitter class, argument is the beam energy (GeV)
 		 novel_fitter = new NovelBaseFitter(10.6,false,false);
 		//novel_fitter = new NovelBaseFitter(10.6, true, true);
-		novel_fitterMC = new NovelBaseFitter(10.6, true, true);
+		 if(isMC)
+			 novel_fitterMC = new NovelBaseFitter(10.6, true, true);
 		// define filter to apply to your events
 		// here we look for events with one electron (11), one photon (22) (change to no
 		// photon) and any number of other
 		// positively charged particles (X+), negatively charged particles (X-) or
 		// neutral
 		// particles (Xn)
-		EventFilter filter = new EventFilter("11:X+:X-:Xn");
-
+		//EventFilter filter = new EventFilter("11:X+:X-:Xn");
+	EventFilter filter = new EventFilter("11:+211:-211:X+:X-:Xn");
 		File folder = new File(args[0]);
 		File[] listOfFiles = folder.listFiles();
 		for (int iF = 0; iF < listOfFiles.length; iF++) {
@@ -148,50 +165,59 @@ public class SimpleAnalyzer {
 
 					while (reader.hasEvent() == true) { // cycle through events
 						// load next event in the hipo file
-						System.out.println("new event----\n\n");
+						//System.out.println("new event----\n\n");
 						HipoDataEvent event = (HipoDataEvent) reader.getNextEvent();
-
+						this.m_EvtCountedPIDChi2=false;
+						this.m_EvtCountedKinCuts=false;
 						// apply fitter to your data event
 						PhysicsEvent generic_Event = novel_fitter.getPhysicsEvent(event);
-						PhysicsEvent generic_EventMC = novel_fitterMC.getPhysicsEvent(event);
+						PhysicsEvent generic_EventMC=new PhysicsEvent();
+						if(isMC)
+							generic_EventMC = novel_fitterMC.getPhysicsEvent(event);
 						// System.out.println("Q2: " + novel_fitter.getQ2() + " W: " +
 						// novel_fitter.Walt);
 						
-						hQ2.fill(novel_fitter.getQ2());
-						hX.fill(novel_fitter.getX());
-						hW.fill(novel_fitter.getW());
-						hQvsX.fill(novel_fitter.getX(), novel_fitter.getQ2());
-						
-						if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.5)
-							continue;
+							
+						this.m_numEventsWithBanks++;
 						
 						numLambdas+=novel_fitter.getNumLambda();
-						System.out.println("found2 " + novel_fitter.getNumLambda());
+					//	System.out.println("found2 " + novel_fitter.getNumLambda());
 						if (filter.isValid(generic_Event) == true) { // apply filter to current event
 							// look at all particles
-
+							hQ2.fill(novel_fitter.getQ2());
+							hX.fill(novel_fitter.getX());
+							hW.fill(novel_fitter.getW());
+							hQvsX.fill(novel_fitter.getX(), novel_fitter.getQ2());
+							m_numGoodFilterEvts++;
+							if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.0)
+								continue;
 							// grab electron
 							Particle electron = generic_Event.getParticle("[11]");
-							System.out.println("found electron with px: "+ electron.px());
+						//	System.out.println("found electron with px: "+ electron.px());
 							// get all Pions and then loop over them to get xF, Q2, theta etc
-							associateMCWithData(generic_Event, generic_EventMC);
+							if(isMC)
+							{
+								associateMCWithData(generic_Event, generic_EventMC);
+							}
+							evtFulfillsMissingMass=false;
 							doDiHadrons(generic_Event,novel_fitter);
 
 							for (int i = 0; i < generic_Event.count(); i++) {
+								
 								MyParticle part = (MyParticle) generic_Event.getParticle(i);
 								if(part.charge()!=0)
 								{
-								if(part.matchingMCPartIndex<0)
-								{
-									noMatchCounter++;	
+									if(part.matchingMCPartIndex<0)
+									{
+										noMatchCounter++;	
 								
+									}
+									else
+									{
+										matchCounter++;
+									}
 								}
-								else
-								{
-									matchCounter++;
-								}
-								}
-								
+							
 								// System.out.println("matching mc particle index: " +
 								// part.matchingMCPartIndex);
 
@@ -235,7 +261,7 @@ public class SimpleAnalyzer {
 												Particle mc1 = generic_EventMC.getParticle(part.matchingMCPartIndex);
 												Particle mc2 = generic_EventMC.getParticle(part2.matchingMCPartIndex);
 												LorentzVector mcTruth = new LorentzVector(mc1.px() + mc2.px(),
-														mc1.py() + mc2.py(), mc1.pz() + mc2.pz(), mc1.e() + mc2.e());
+												mc1.py() + mc2.py(), mc1.pz() + mc2.pz(), mc1.e() + mc2.e());
 												hLambdaMassRes.fill(mcTruth.mass() - lambdaCandidate.mass());
 												LorentzVector boostedMCTruth = new LorentzVector(mcTruth);
 												boostedMCTruth.boost(novel_fitter.gNBoost);
@@ -308,8 +334,9 @@ public class SimpleAnalyzer {
 				reader.close();
 			}
 		}
+		System.out.println("num evts: " + this.m_numEventsWithBanks + " filtered: " + this.m_numGoodFilterEvts + " numWithQ2, W cuts: "+ this.m_numEvtsWithKinCuts+ " and with chi2pid cuts: "+ this.m_numEvtsWithPIDChi2);
 		System.out.println("found " + numLambdas + " Lambdas");
-		System.out.println("match found " + matchCounter + " nomatch: " + noMatchCounter + " percent "+ matchCounter/(matchCounter+noMatchCounter));
+	//	System.out.println("match found " + matchCounter + " nomatch: " + noMatchCounter + " percent "+ matchCounter/(matchCounter+noMatchCounter));
 	}
 
 	void doDiHadrons(PhysicsEvent generic_Event, NovelBaseFitter m_novel_fitter) {
@@ -319,11 +346,19 @@ public class SimpleAnalyzer {
 			// part.matchingMCPartIndex);
 
 			if (part.pid() == 211) {
-				// System.out.println("found proton");
+				
 				for (int j = 0; j < generic_Event.count(); j++) {
 					MyParticle part2 = (MyParticle) generic_Event.getParticle(j);
 					// Systefm.out.println("lookign at pid " + part2.pid());
 					if (part2.pid() == (-211)) {
+						
+						if(!this.m_EvtCountedKinCuts)
+						{
+							this.m_numEvtsWithKinCuts++;
+							this.m_EvtCountedKinCuts=true;
+						}
+					
+						
 						HadronPair pair=new HadronPair(part,part2,m_novel_fitter.getq(),m_novel_fitter.getL(),m_novel_fitter.Walt,m_novel_fitter.gNBoost);
 
 						hDiPionMass2.fill(pair.getMass());
@@ -333,8 +368,20 @@ public class SimpleAnalyzer {
 						 hDiPionPhiH.fill(pair.getPhiH());
 						 hDiPionPhiR.fill(pair.getPhiR());
 						 hZ.fill(pair.getZ());
+						 hDiPionMissingMass.fill(pair.getMissingMass());
 						 
-						
+						if(pair.getMissingMass()>1.05);
+						{
+							evtFulfillsMissingMass=true;
+							if(part.m_chi2pid<=5.0 && part2.m_chi2pid<=5.0)
+							{
+								if(false==this.m_EvtCountedPIDChi2)
+								{
+									this.m_numEvtsWithPIDChi2++;
+									this.m_EvtCountedPIDChi2=true;
+								}
+							}
+						}
 						LorentzVector pionPair = new LorentzVector(part.px() + part2.px(), part.py() + part2.py(),
 								part.pz() + part2.pz(), part.e() + part2.e());
 						hDiPionMass.fill(pionPair.mass());
@@ -425,11 +472,11 @@ public class SimpleAnalyzer {
 		can_dihad.save("dihadrons.png");
 		
 		EmbeddedCanvas can_dihad2 = new EmbeddedCanvas();
-		can_dihad2.setSize(1200, 600);
-		can_dihad2.divide(2, 3);
-		can_dihad2.setAxisTitleSize(24);
-		can_dihad2.setAxisFontSize(24);
-		can_dihad2.setTitleSize(24);
+		can_dihad2.setSize(1800, 1000);
+		can_dihad2.divide(3, 3);
+		can_dihad2.setAxisTitleSize(30);
+		can_dihad2.setAxisFontSize(30);
+		can_dihad2.setTitleSize(30);
 		can_dihad2.cd(0);
 		can_dihad2.draw(hDiPionMass2);
 		can_dihad2.cd(1);
@@ -443,6 +490,8 @@ public class SimpleAnalyzer {
 		can_dihad2.draw(hDiPionPhiH);
 		can_dihad2.cd(5);
 		can_dihad2.draw(hDiPionPhiR);
+		can_dihad2.cd(6);
+		can_dihad2.draw(this.hDiPionMissingMass);
 		can_dihad2.save("dihadrons2.png");
 		
 		EmbeddedCanvas can_kinematics = new EmbeddedCanvas();
@@ -454,15 +503,20 @@ public class SimpleAnalyzer {
 		//can_kinematics.setl
 		can_kinematics.cd(0);
 		can_kinematics.draw(hQ2);
+		can_kinematics.getPad(0).getAxisY().setLog(true);
 		//hQ2.getAxis().
 		can_kinematics.cd(1);
+		can_kinematics.getPad(1).getAxisX().setLog(true);
 		can_kinematics.draw(hX);
 		can_kinematics.cd(2);
 		can_kinematics.draw(hW);
 		can_kinematics.cd(3);
+		can_kinematics.getPad(3).getAxisX().setLog(true);
+		//can_kinematics.getPad(3).getAxisY().setLog(true);
+		can_kinematics.getPad(3).getAxisZ().setLog(true);
 		can_kinematics.draw(hQvsX);
 		can_kinematics.save("kinematics.png");
-		LorentzVector v;
+		
 
 	}
 
