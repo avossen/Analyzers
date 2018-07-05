@@ -479,7 +479,7 @@ public class SimpleAnalyzer {
 	public void saveData(String hipoFilename)
 	{
 		String filename=hipoFilename.substring(0, hipoFilename.lastIndexOf('.'));
-		filename=filename+"srn";
+		filename=filename+".srn";
 		System.out.println("saving java output to: " + filename);
 		try
 		{

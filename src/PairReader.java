@@ -34,7 +34,14 @@ public class PairReader {
 	             
 	            // Method for deserialization of object
 						m_asymData = (AsymData)in.readObject();
-	           
+						System.out.println("got "+ m_asymData.eventData.size() + " hadron pairs");
+	           for(int i =0;i<m_asymData.eventData.size();i++)
+	           {
+						for(int j=0;j<m_asymData.eventData.get(i).pairData.size();j++)
+						{
+							System.out.println("looking at hadron pair with z: "+ m_asymData.eventData.get(i).pairData.get(j).z);			
+						}
+	           }
 						in.close();
 						file.close();
 	             
