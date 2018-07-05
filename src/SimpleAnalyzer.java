@@ -3,6 +3,8 @@ import NovelFitters.MyParticle;
 import org.jlab.io.hipo.*;
 import org.jlab.io.base.DataEvent;
 
+
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,9 +80,13 @@ public class SimpleAnalyzer {
 	protected NovelBaseFitter novel_fitter;
 	protected NovelBaseFitter novel_fitterMC;
 	
-	ArrayList<EventData> m_eventData;
+	
+	AsymData m_asymData;
+	//ArrayList<EventData> m_eventData;
+	//ArrayList<EventData> m_mcEventData;
 	//hold reference to the current event
 	EventData currentEvent;
+	EventData currentMCEvent;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -95,7 +101,36 @@ public class SimpleAnalyzer {
 		analyzer.plot();
 	}
 
+	//add the hadron pair to the event data
+	protected HadronPairData addHadronPair(HadronPair pair, boolean isMC)
+	{
+		HadronPairData data=new HadronPairData();
+		data.M=(float)pair.getMass();
+		data.phiR=(float)pair.getPhiR();
+		data.pTBreit=(float)pair.getPt();
+		data.pTLab=(float)pair.getPtLab();
+		data.xF=(float)pair.getXf();
+		data.z=(float)pair.getZ();
+		data.hasMC=false;
+		if(!isMC)
+		{
+			if(pair.hasMatchingMC)
+			{
+				data.hasMC=true;
+				data.matchingMCPair=pair.matchingMCData;
+			}
+			this.currentMCEvent.pairData.add(data);
+			
+		}
+		else
+		{
+			this.currentEvent.pairData.add(data);
+		}
+		return data;
+	}
+	
 	public void analyze(String[] args) {
+		
 		m_numGoodFilterEvts=0;
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
@@ -163,6 +198,8 @@ public class SimpleAnalyzer {
 
 				Path filename = Paths.get(listOfFiles[iF].getName());
 				if (matcher.matches(filename)) {
+					//one asymmetry file per data input file
+					this.m_asymData=new AsymData();
 					System.out.println("matched" + filename);
 
 					reader.open(args[0] + listOfFiles[iF].getName()); // open hipo file
@@ -206,10 +243,17 @@ public class SimpleAnalyzer {
 							}
 							evtFulfillsMissingMass=false;
 							this.currentEvent=new EventData();
+							this.currentMCEvent=new EventData();
 							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
-							//there should be a check here that we indeed found valid di-hadrons
-							this.m_eventData.add(this.currentEvent);
-							doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
+						
+							if(this.currentEvent.pairData.size()>0)
+							{		
+								m_asymData.eventData.add(this.currentEvent);
+								m_asymData.eventDataMC.add(this.currentMCEvent);
+							}
+							
+							
+							//doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
 						
 
 							/**
@@ -233,6 +277,7 @@ public class SimpleAnalyzer {
 					}
 				}
 				reader.close();
+				this.saveData(listOfFiles[iF].getName());
 			}
 		}
 		System.out.println("num evts: " + this.m_numEventsWithBanks + " filtered: " + this.m_numGoodFilterEvts + " numWithQ2, W cuts: "+ this.m_numEvtsWithKinCuts+ " and with chi2pid cuts: "+ this.m_numEvtsWithPIDChi2);
@@ -403,20 +448,19 @@ public class SimpleAnalyzer {
 						double phT = Math.sqrt(px * px + py * py);
 						hDiPionPPerp.fill(phT);
 						//check if there is a MC counterpart and save
+						
 						if (part.matchingMCPartIndex != -1 && part2.matchingMCPartIndex != -1) {
 							//System.out.println("found lambda candidate with matching MC!!");
 
 							MyParticle mc1 = (MyParticle)generic_EventMC.getParticle(part.matchingMCPartIndex);
 							MyParticle mc2 = (MyParticle)generic_EventMC.getParticle(part2.matchingMCPartIndex);
 							HadronPair pairMC=new HadronPair(mc1,mc2,m_novel_fitterMC.getq(),m_novel_fitterMC.getL(),m_novel_fitterMC.Walt,m_novel_fitterMC.gNBoost);
-
-							
+							HadronPairData hpd=addHadronPair(pairMC,true);
+							pair.hasMatchingMC=true;
+							pair.matchingMC=pairMC;
+							pair.matchingMCData=hpd;
 						}
-
-						
-						
-						
-
+						addHadronPair(pair,false);	
 					}
 				}
 			}
@@ -425,9 +469,12 @@ public class SimpleAnalyzer {
 	}
 
 	
-	public void saveData()
+	public void saveData(String hipoFilename)
 	{
+	String filename=hipoFilename.substring(0, hipoFilename.lastIndexOf('.'));
+	System.out.println("saving java output to: " + filename);
 	
+		
 	}
 	
 	

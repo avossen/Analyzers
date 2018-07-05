@@ -12,7 +12,7 @@ public class HadronPairData implements Serializable {
 	public boolean hasMC;
 	public float pTLab;
 	public float pTBreit;
-	
+	HadronPairData matchingMCPair;
 	
 	
 	public HadronPairData()
