@@ -245,6 +245,9 @@ public class SimpleAnalyzer {
 							}
 							evtFulfillsMissingMass=false;
 							this.currentEvent=new EventData();
+							currentEvent.Q2=novel_fitter.getQ2();
+							currentEvent.W=novel_fitter.getW();
+							currentEvent.x=novel_fitter.getX();
 							this.currentMCEvent=new EventData();
 							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
 							//System.out.println("pair data size: "+currentEvent.pairData.size());

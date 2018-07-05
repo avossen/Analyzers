@@ -10,6 +10,7 @@ public class EventData implements Serializable {
 	public boolean hasMC;
 	public float Q2;
 	public float W;
+	public float x;
 	public ArrayList<HadronPairData> pairData;
 	
 }
