@@ -3,8 +3,6 @@ import NovelFitters.MyParticle;
 import org.jlab.io.hipo.*;
 import org.jlab.io.base.DataEvent;
 
-
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,6 +110,11 @@ public class SimpleAnalyzer {
 		data.xF=(float)pair.getXf();
 		data.z=(float)pair.getZ();
 		data.hasMC=false;
+		
+	//	System.out.println("saving, isMC?: " + isMC);
+		
+		//not the MC, so lets see if it has a matching MC that we want to save
+		//the assumption is that java checks the references, so that things are not saved twice, just the reference
 		if(!isMC)
 		{
 			if(pair.hasMatchingMC)
@@ -119,12 +122,11 @@ public class SimpleAnalyzer {
 				data.hasMC=true;
 				data.matchingMCPair=pair.matchingMCData;
 			}
-			this.currentMCEvent.pairData.add(data);
-			
+			this.currentEvent.pairData.add(data);
 		}
 		else
 		{
-			this.currentEvent.pairData.add(data);
+			this.currentMCEvent.pairData.add(data);
 		}
 		return data;
 	}
@@ -245,9 +247,11 @@ public class SimpleAnalyzer {
 							this.currentEvent=new EventData();
 							this.currentMCEvent=new EventData();
 							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
-						
+							//System.out.println("pair data size: "+currentEvent.pairData.size());
+							
 							if(this.currentEvent.pairData.size()>0)
 							{		
+								//System.out.println("pair data size: "+currentEvent.pairData.size());
 								m_asymData.eventData.add(this.currentEvent);
 								m_asymData.eventDataMC.add(this.currentMCEvent);
 							}
@@ -410,8 +414,7 @@ public class SimpleAnalyzer {
 						
 						HadronPair pair=new HadronPair(part,part2,m_novel_fitter.getq(),m_novel_fitter.getL(),m_novel_fitter.Walt,m_novel_fitter.gNBoost);
 
-						
-						
+							
 						
 						hDiPionMass2.fill(pair.getMass());
 						 hDiPionTheta2.fill(pair.getTheta());
@@ -460,7 +463,11 @@ public class SimpleAnalyzer {
 							pair.matchingMC=pairMC;
 							pair.matchingMCData=hpd;
 						}
+					//System.out.println("adding hadron pair");	
+					//System.out.println("pair data before: " + this.currentEvent.pairData.size());	
 						addHadronPair(pair,false);	
+					//	System.out.println("pair data now: " + this.currentEvent.pairData.size());	
+						
 					}
 				}
 			}
@@ -472,6 +479,7 @@ public class SimpleAnalyzer {
 	public void saveData(String hipoFilename)
 	{
 		String filename=hipoFilename.substring(0, hipoFilename.lastIndexOf('.'));
+		filename=filename+"srn";
 		System.out.println("saving java output to: " + filename);
 		try
 		{

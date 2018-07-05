@@ -4,7 +4,7 @@ public class EventData implements Serializable {
 
 	public EventData()
 	{
-		
+		pairData=new ArrayList<HadronPairData>();	
 	}
 	
 	public boolean hasMC;

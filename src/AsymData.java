@@ -11,7 +11,8 @@ public class AsymData implements Serializable {
 		public ArrayList<EventData> eventDataMC;
 		public AsymData()
 		{
-			
+			eventData=new ArrayList<EventData>();
+			eventDataMC=new ArrayList<EventData>();
 			
 		}
 }
