@@ -471,9 +471,23 @@ public class SimpleAnalyzer {
 	
 	public void saveData(String hipoFilename)
 	{
-	String filename=hipoFilename.substring(0, hipoFilename.lastIndexOf('.'));
-	System.out.println("saving java output to: " + filename);
-	
+		String filename=hipoFilename.substring(0, hipoFilename.lastIndexOf('.'));
+		System.out.println("saving java output to: " + filename);
+		try
+		{
+			FileOutputStream file=new FileOutputStream(filename);
+			ObjectOutputStream out = new ObjectOutputStream(file);
+			out.writeObject(this.m_asymData);
+			out.close();
+			file.close();
+			System.out.println("saved java output to: " + filename);
+		}
+		catch(IOException ex)
+		{
+			System.out.println("IOException is caught");
+		}
+		
+		
 		
 	}
 	
