@@ -77,6 +77,10 @@ public class SimpleAnalyzer {
 	protected final double m_pi = 0.1396;
 	protected NovelBaseFitter novel_fitter;
 	protected NovelBaseFitter novel_fitterMC;
+	
+	ArrayList<EventData> m_eventData;
+	//hold reference to the current event
+	EventData currentEvent;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -149,7 +153,7 @@ public class SimpleAnalyzer {
 		// neutral
 		// particles (Xn)
 		//EventFilter filter = new EventFilter("11:X+:X-:Xn");
-	EventFilter filter = new EventFilter("11:+211:-211:X+:X-:Xn");
+		EventFilter filter = new EventFilter("11:+211:-211:X+:X-:Xn");
 		File folder = new File(args[0]);
 		File[] listOfFiles = folder.listFiles();
 		for (int iF = 0; iF < listOfFiles.length; iF++) {
@@ -180,7 +184,7 @@ public class SimpleAnalyzer {
 							
 						this.m_numEventsWithBanks++;
 						
-						numLambdas+=novel_fitter.getNumLambda();
+						//numLambdas+=novel_fitter.getNumLambda();
 					//	System.out.println("found2 " + novel_fitter.getNumLambda());
 						if (filter.isValid(generic_Event) == true) { // apply filter to current event
 							// look at all particles
@@ -197,110 +201,16 @@ public class SimpleAnalyzer {
 							// get all Pions and then loop over them to get xF, Q2, theta etc
 							if(isMC)
 							{
+								//-->
 								associateMCWithData(generic_Event, generic_EventMC);
 							}
 							evtFulfillsMissingMass=false;
-							doDiHadrons(generic_Event,novel_fitter);
-
-							for (int i = 0; i < generic_Event.count(); i++) {
-								
-								MyParticle part = (MyParticle) generic_Event.getParticle(i);
-								if(part.charge()!=0)
-								{
-									if(part.matchingMCPartIndex<0)
-									{
-										noMatchCounter++;	
-								
-									}
-									else
-									{
-										matchCounter++;
-									}
-								}
-							
-								// System.out.println("matching mc particle index: " +
-								// part.matchingMCPartIndex);
-
-								// System.out.println("found particle with pid: " +part.pid() + " energy: "+
-								// part.e() + " theta: "+part.theta()/Math.PI *180 + "p: "+part.px() + ", " +
-								// part.py() + ", " +part.pz());
-								if (part.pid() == 2212) {
-
-									// System.out.println("found proton");
-									for (int j = 0; j < generic_Event.count(); j++) {
-										MyParticle part2 = (MyParticle) generic_Event.getParticle(j);
-										// Systefm.out.println("lookign at pid " + part2.pid());
-										if (part2.pid() == (-211)) {
-											// test K_S hypothesis by assuming that
-											LorentzVector pionHyp = new LorentzVector();
-											pionHyp.setPxPyPzM(part.px(), part.py(), part.pz(), m_pi);
-											LorentzVector lambdaCandidate = new LorentzVector(part.px() + part2.px(),
-													part.py() + part2.py(), part.pz() + part2.pz(),
-													part.e() + part2.e());
-											LorentzVector piPiCandidate = new LorentzVector(pionHyp.px() + part2.px(),
-													pionHyp.py() + part2.py(), pionHyp.pz() + part2.pz(),
-													pionHyp.e() + part2.e());
-
-											hLambdaMass.fill(lambdaCandidate.mass());
-											hPiPiMass.fill(piPiCandidate.mass());
-
-											LorentzVector lvTarget = new LorentzVector();
-
-											double z = lambdaCandidate.e() / novel_fitter.getq().e();
-
-											double zPiPi = piPiCandidate.e() / novel_fitter.getq().e();
-											LorentzVector boostedLambda = new LorentzVector(lambdaCandidate);
-											LorentzVector boostedPiPi = new LorentzVector(piPiCandidate);
-											boostedLambda.boost(novel_fitter.gNBoost);
-											boostedPiPi.boost(novel_fitter.gNBoost);
-											double xF = boostedLambda.pz() / novel_fitter.Walt;
-											double xFPiPi = boostedLambda.pz() / novel_fitter.Walt;
-											if (part.matchingMCPartIndex != -1 && part2.matchingMCPartIndex != -1) {
-												System.out.println("found lambda candidate with matching MC!!");
-
-												Particle mc1 = generic_EventMC.getParticle(part.matchingMCPartIndex);
-												Particle mc2 = generic_EventMC.getParticle(part2.matchingMCPartIndex);
-												LorentzVector mcTruth = new LorentzVector(mc1.px() + mc2.px(),
-												mc1.py() + mc2.py(), mc1.pz() + mc2.pz(), mc1.e() + mc2.e());
-												hLambdaMassRes.fill(mcTruth.mass() - lambdaCandidate.mass());
-												LorentzVector boostedMCTruth = new LorentzVector(mcTruth);
-												boostedMCTruth.boost(novel_fitter.gNBoost);
-												double xFTrue = boostedMCTruth.pz() / novel_fitter.Walt;
-												hLambdaXfRes.fill(xFTrue - xF);
-												hTrueLambdaMass.fill(mcTruth.mass());
-												if (mcTruth.mass() < 1.12 && mcTruth.mass() > 1.11)
-													hTrueXf.fill(xFTrue);
-												// if(xFTrue>0.0)
-												{
-													// hLambdaMassXfCutRes.fill(mcTruth.mass()-lambdaCandidate.mass());
-												}
-											}
-
-											hLambdaXf.fill(xF);
-											hPiPiXf.fill(xF);
-											if (xF > 0.0) {
-												hLambdaMassXfCut.fill(lambdaCandidate.mass());
-												if (lambdaCandidate.mass() < 1.25)
-													hXfVsZ.fill(z, xF);
-												// System.out.println("walt: " + novel_fitter.Walt + "boosted pz
-												// "+boostedLambda.pz());
-												// System.out.println("found lambda candidate with mass:
-												// "+lambdaCandidate.mass()+ " xF: "+ xF);
-											}
-											if (xFPiPi > 0.0) {
-												hPiPiMassXfCut.fill(lambdaCandidate.mass());
-												if (piPiCandidate.mass() < 1.25)
-													hPiPiXfVsZ.fill(z, xF);
-												// System.out.println("walt: " + novel_fitter.Walt + "boosted pz
-												// "+boostedLambda.pz());
-												// System.out.println("found lambda candidate with mass:
-												// "+lambdaCandidate.mass()+ " xF: "+ xF);
-											}
-										}
-									}
-								}
-
-							}
+							this.currentEvent=new EventData();
+							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
+							//there should be a check here that we indeed found valid di-hadrons
+							this.m_eventData.add(this.currentEvent);
+							doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
+						
 
 							/**
 							 * ArrayList<Particle> pions = (ArrayList<Particle>)
@@ -318,16 +228,7 @@ public class SimpleAnalyzer {
 							 * } }
 							 */
 
-							// grab first photon
-							// Particle photon = generic_Event.getParticle("[22]");
-
-							// Particle class allows for addition of particles (adds four momenta)
-							// Particle sum_particle = generic_Event.getParticle("[11]+[22]");
-							// Particles have PID, vertices and momenta properties
-
-							// print out the energy of the electron+photon
-							// System.out.println("The sum of the electron and photon energy is
-							// "+sum_particle.e()+" (GeV).");
+							
 						}
 					}
 				}
@@ -339,7 +240,110 @@ public class SimpleAnalyzer {
 	//	System.out.println("match found " + matchCounter + " nomatch: " + noMatchCounter + " percent "+ matchCounter/(matchCounter+noMatchCounter));
 	}
 
-	void doDiHadrons(PhysicsEvent generic_Event, NovelBaseFitter m_novel_fitter) {
+	void doLambdas(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC, NovelBaseFitter m_novel_fitter, NovelBaseFitter m_novel_fitterMC)
+	{
+		for (int i = 0; i < generic_Event.count(); i++) {
+			
+			MyParticle part = (MyParticle) generic_Event.getParticle(i);
+			if(part.charge()!=0)
+			{
+				if(part.matchingMCPartIndex<0)
+				{
+					noMatchCounter++;
+				}
+				else
+				{
+					matchCounter++;
+				}
+			}
+		
+			// System.out.println("matching mc particle index: " +
+			// part.matchingMCPartIndex);
+
+			// System.out.println("found particle with pid: " +part.pid() + " energy: "+
+			// part.e() + " theta: "+part.theta()/Math.PI *180 + "p: "+part.px() + ", " +
+			// part.py() + ", " +part.pz());
+			if (part.pid() == 2212) {
+
+				// System.out.println("found proton");
+				for (int j = 0; j < generic_Event.count(); j++) {
+					MyParticle part2 = (MyParticle) generic_Event.getParticle(j);
+					// Systefm.out.println("lookign at pid " + part2.pid());
+					if (part2.pid() == (-211)) {
+						// test K_S hypothesis by assuming that
+						LorentzVector pionHyp = new LorentzVector();
+						pionHyp.setPxPyPzM(part.px(), part.py(), part.pz(), m_pi);
+						LorentzVector lambdaCandidate = new LorentzVector(part.px() + part2.px(),
+								part.py() + part2.py(), part.pz() + part2.pz(),
+								part.e() + part2.e());
+						LorentzVector piPiCandidate = new LorentzVector(pionHyp.px() + part2.px(),
+								pionHyp.py() + part2.py(), pionHyp.pz() + part2.pz(),
+								pionHyp.e() + part2.e());
+
+						hLambdaMass.fill(lambdaCandidate.mass());
+						hPiPiMass.fill(piPiCandidate.mass());
+
+						LorentzVector lvTarget = new LorentzVector();
+
+						double z = lambdaCandidate.e() / novel_fitter.getq().e();
+
+						double zPiPi = piPiCandidate.e() / novel_fitter.getq().e();
+						LorentzVector boostedLambda = new LorentzVector(lambdaCandidate);
+						LorentzVector boostedPiPi = new LorentzVector(piPiCandidate);
+						boostedLambda.boost(novel_fitter.gNBoost);
+						boostedPiPi.boost(novel_fitter.gNBoost);
+						double xF = boostedLambda.pz() / novel_fitter.Walt;
+						double xFPiPi = boostedLambda.pz() / novel_fitter.Walt;
+						if (part.matchingMCPartIndex != -1 && part2.matchingMCPartIndex != -1) {
+							System.out.println("found lambda candidate with matching MC!!");
+
+							Particle mc1 = generic_EventMC.getParticle(part.matchingMCPartIndex);
+							Particle mc2 = generic_EventMC.getParticle(part2.matchingMCPartIndex);
+							LorentzVector mcTruth = new LorentzVector(mc1.px() + mc2.px(),
+							mc1.py() + mc2.py(), mc1.pz() + mc2.pz(), mc1.e() + mc2.e());
+							hLambdaMassRes.fill(mcTruth.mass() - lambdaCandidate.mass());
+							LorentzVector boostedMCTruth = new LorentzVector(mcTruth);
+							boostedMCTruth.boost(novel_fitter.gNBoost);
+							double xFTrue = boostedMCTruth.pz() / novel_fitter.Walt;
+							hLambdaXfRes.fill(xFTrue - xF);
+							hTrueLambdaMass.fill(mcTruth.mass());
+							if (mcTruth.mass() < 1.12 && mcTruth.mass() > 1.11)
+								hTrueXf.fill(xFTrue);
+							// if(xFTrue>0.0)
+							{
+								// hLambdaMassXfCutRes.fill(mcTruth.mass()-lambdaCandidate.mass());
+							}
+						}
+
+						hLambdaXf.fill(xF);
+						hPiPiXf.fill(xF);
+						if (xF > 0.0) {
+							hLambdaMassXfCut.fill(lambdaCandidate.mass());
+							if (lambdaCandidate.mass() < 1.25)
+								hXfVsZ.fill(z, xF);
+							// System.out.println("walt: " + novel_fitter.Walt + "boosted pz
+							// "+boostedLambda.pz());
+							// System.out.println("found lambda candidate with mass:
+							// "+lambdaCandidate.mass()+ " xF: "+ xF);
+						}
+						if (xFPiPi > 0.0) {
+							hPiPiMassXfCut.fill(lambdaCandidate.mass());
+							if (piPiCandidate.mass() < 1.25)
+								hPiPiXfVsZ.fill(z, xF);
+							// System.out.println("walt: " + novel_fitter.Walt + "boosted pz
+							// "+boostedLambda.pz());
+							// System.out.println("found lambda candidate with mass:
+							// "+lambdaCandidate.mass()+ " xF: "+ xF);
+						}	
+					}
+				}
+			}
+
+		}
+	
+	}
+	
+	void doDiHadrons(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC, NovelBaseFitter m_novel_fitter, NovelBaseFitter m_novel_fitterMC) {
 		for (int i = 0; i < generic_Event.count(); i++) {
 			MyParticle part = (MyParticle) generic_Event.getParticle(i);
 			// System.out.println("matching mc particle index: " +
@@ -361,6 +365,9 @@ public class SimpleAnalyzer {
 						
 						HadronPair pair=new HadronPair(part,part2,m_novel_fitter.getq(),m_novel_fitter.getL(),m_novel_fitter.Walt,m_novel_fitter.gNBoost);
 
+						
+						
+						
 						hDiPionMass2.fill(pair.getMass());
 						 hDiPionTheta2.fill(pair.getTheta());
 						 hDiPionPPerp2.fill(pair.getPt());
@@ -382,6 +389,8 @@ public class SimpleAnalyzer {
 								}
 							}
 						}
+						
+						
 						LorentzVector pionPair = new LorentzVector(part.px() + part2.px(), part.py() + part2.py(),
 								part.pz() + part2.pz(), part.e() + part2.e());
 						hDiPionMass.fill(pionPair.mass());
@@ -393,6 +402,20 @@ public class SimpleAnalyzer {
 						double py = boostedPair.vect().y();
 						double phT = Math.sqrt(px * px + py * py);
 						hDiPionPPerp.fill(phT);
+						//check if there is a MC counterpart and save
+						if (part.matchingMCPartIndex != -1 && part2.matchingMCPartIndex != -1) {
+							//System.out.println("found lambda candidate with matching MC!!");
+
+							MyParticle mc1 = (MyParticle)generic_EventMC.getParticle(part.matchingMCPartIndex);
+							MyParticle mc2 = (MyParticle)generic_EventMC.getParticle(part2.matchingMCPartIndex);
+							HadronPair pairMC=new HadronPair(mc1,mc2,m_novel_fitterMC.getq(),m_novel_fitterMC.getL(),m_novel_fitterMC.Walt,m_novel_fitterMC.gNBoost);
+
+							
+						}
+
+						
+						
+						
 
 					}
 				}
@@ -401,6 +424,13 @@ public class SimpleAnalyzer {
 
 	}
 
+	
+	public void saveData()
+	{
+	
+	}
+	
+	
 	public void plot() {
 		EmbeddedCanvas can_lambda = new EmbeddedCanvas();
 		can_lambda.setSize(1200, 600);

@@ -105,7 +105,7 @@ public class HadronPair {
 		LorentzVector protonLab = new LorentzVector();
 		protonLab.setPxPyPzM(0.0, 0.0, 0.0, m_p);
 		LorentzVector tmp = new LorentzVector(protonLab);
-		tmp.add(protonLab);
+	//	tmp.add(protonLab);
 		tmp.add(lvQLab);
 		tmp.sub(pionPair);
 		missingMass = tmp.mass();
