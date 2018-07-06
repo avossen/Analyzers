@@ -94,10 +94,12 @@ public class SimpleAnalyzer {
 			System.exit(0);
 		}
 		SimpleAnalyzer analyzer = new SimpleAnalyzer();
-		analyzer.isMC=false;
+		analyzer.isMC=true;
+		//analyzer.isMC=false;
 		analyzer.analyze(args);
 		analyzer.plot();
 	}
+	
 
 	//add the hadron pair to the event data
 	protected HadronPairData addHadronPair(HadronPair pair, boolean isMC)
@@ -110,6 +112,7 @@ public class SimpleAnalyzer {
 		data.xF=(float)pair.getXf();
 		data.z=(float)pair.getZ();
 		data.hasMC=false;
+		data.theta=(float)pair.getTheta();
 		
 	//	System.out.println("saving, isMC?: " + isMC);
 		
@@ -119,6 +122,7 @@ public class SimpleAnalyzer {
 		{
 			if(pair.hasMatchingMC)
 			{
+				System.out.println("has mc");
 				data.hasMC=true;
 				data.matchingMCPair=pair.matchingMCData;
 			}
@@ -216,7 +220,9 @@ public class SimpleAnalyzer {
 						PhysicsEvent generic_Event = novel_fitter.getPhysicsEvent(event);
 						PhysicsEvent generic_EventMC=new PhysicsEvent();
 						if(isMC)
+						{
 							generic_EventMC = novel_fitterMC.getPhysicsEvent(event);
+						}
 						// System.out.println("Q2: " + novel_fitter.getQ2() + " W: " +
 						// novel_fitter.Walt);
 						
@@ -245,9 +251,9 @@ public class SimpleAnalyzer {
 							}
 							evtFulfillsMissingMass=false;
 							this.currentEvent=new EventData();
-							currentEvent.Q2=novel_fitter.getQ2();
-							currentEvent.W=novel_fitter.getW();
-							currentEvent.x=novel_fitter.getX();
+							currentEvent.Q2=(float)novel_fitter.getQ2();
+							currentEvent.W=(float)novel_fitter.getW();
+							currentEvent.x=(float)novel_fitter.getX();
 							this.currentMCEvent=new EventData();
 							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
 							//System.out.println("pair data size: "+currentEvent.pairData.size());
@@ -256,7 +262,7 @@ public class SimpleAnalyzer {
 							{		
 								//System.out.println("pair data size: "+currentEvent.pairData.size());
 								m_asymData.eventData.add(this.currentEvent);
-								m_asymData.eventDataMC.add(this.currentMCEvent);
+								m_asymData.eventDataMC.add(this.currentMCEvent) ;
 							}
 							
 							
@@ -456,12 +462,13 @@ public class SimpleAnalyzer {
 						//check if there is a MC counterpart and save
 						
 						if (part.matchingMCPartIndex != -1 && part2.matchingMCPartIndex != -1) {
-							//System.out.println("found lambda candidate with matching MC!!");
+							//System.out.println("found di hadron  candidate with matching MC!!");
 
 							MyParticle mc1 = (MyParticle)generic_EventMC.getParticle(part.matchingMCPartIndex);
 							MyParticle mc2 = (MyParticle)generic_EventMC.getParticle(part2.matchingMCPartIndex);
 							HadronPair pairMC=new HadronPair(mc1,mc2,m_novel_fitterMC.getq(),m_novel_fitterMC.getL(),m_novel_fitterMC.Walt,m_novel_fitterMC.gNBoost);
 							HadronPairData hpd=addHadronPair(pairMC,true);
+							//System.out.println("found matching hadron pair");
 							pair.hasMatchingMC=true;
 							pair.matchingMC=pairMC;
 							pair.matchingMCData=hpd;
@@ -623,7 +630,7 @@ public class SimpleAnalyzer {
 	}
 
 	protected void associateMCWithData(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC) {
-
+System.out.println("associate");
 		for (int i = 0; i < generic_Event.count(); i++) {
 			double minMomDiff = 1000.0;
 			int minMomDiffIndex = -1;
@@ -651,8 +658,7 @@ public class SimpleAnalyzer {
 					// System.out.println("mc teta "+ thetaMC + " phi " + phiMC + " mom " +momMC);
 				}
 
-				// System.out.println("Looking at MC part "+ j + " rel momDiff: " +
-				// ((mom-momMC)/momMC));
+				// System.out.println("Looking at MC part "+ j + " rel momDiff: " + ((mom-momMC)/momMC));
 				if (Math.abs(mom - momMC) < 0.025 * momMC && Math.abs(theta - thetaMC) < 1.0
 						&& Math.abs(phi - phiMC) < 5) {
 					if (Math.abs(mom - momMC) < minMomDiff) {
@@ -661,7 +667,7 @@ public class SimpleAnalyzer {
 					}
 				}
 			}
-			//System.out.println("associate mc part "+minMomDiffIndex + " with "+ i);
+		//	System.out.println("associate mc part "+minMomDiffIndex + " with "+ i);
 			part.matchingMCPartIndex = minMomDiffIndex;
 		}
 
