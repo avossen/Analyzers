@@ -1,0 +1,1 @@
+java -cp "$COATJAVA/lib/clas/*:./NovelFitter.jar:." SimpleAnalyzer /w/hallb-scifs17exp/clas12/avakian/mc/mayreview/T-1.00_S-1.0/dh/cooked-bg/

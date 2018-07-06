@@ -1,0 +1,3 @@
+javac -cp "$COATJAVA/lib/clas/*:./NovelFitter.jar:." PairReader.java 
+javac -cp "$COATJAVA/lib/clas/*:./NovelFitter.jar:." SimpleAnalyzer.java 
+
