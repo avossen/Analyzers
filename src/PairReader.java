@@ -50,8 +50,8 @@ public class PairReader {
 		thetaResolution = new H1F("thetaResolution", "thetaResolution", 100, -1.0, 1.0);
 		zResolution = new H1F("zResolution", "zResolution", 100, -1.0, 1.0);
 		MResolution = new H1F("MResolution", "MResolution", 100, -1.0, 1.0);
-		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, 0.0, 1.0);
-		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, 0.0, 1.0);
+		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
+		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 	}
 	public void savePlots()
 	{
