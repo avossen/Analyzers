@@ -37,6 +37,7 @@ public class PairReader {
 	
 	protected H2F phiRVsZResolution;
 	protected H2F MVsZResolution;
+	protected H2F hQ2VsX;
 	
 	
 	
@@ -66,6 +67,8 @@ public class PairReader {
 		hPhiH=new H1F("phiH","phiH",100,-2*Math.PI,2*Math.PI);
 		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
+		hQ2VsX =new H2F("Q2VsX","Q2VsX",20,0.0,1.0,20,0.0,12);
+		
 	}
 	public void savePlots()
 	{
@@ -89,6 +92,8 @@ public class PairReader {
 		can_piPi.cd(3);;
 		can_piPi.draw(MResolution);
 		can_piPi.save("resolutions.png");	
+		
+		
 		
 		EmbeddedCanvas can2D =new EmbeddedCanvas();
 		can2D.setSize(1200,600);
@@ -128,6 +133,11 @@ public class PairReader {
 		canKin.getPad(2).getAxisX().setTitle("xF");
 		canKin.cd(2);
 		canKin.draw(this.hXf);
+		canKin.cd(3);
+		canKin.getPad(3).getAxisX().setTitle("x");
+		canKin.getPad(3).getAxisY().setTitle("Q2");
+		canKin.getPad(3).getAxisZ().setLog(true);
+		canKin.draw(this.hQ2VsX);
 		canKin.save("diHadKins.png");
 		
 	}
@@ -160,8 +170,10 @@ public class PairReader {
 						System.out.println("got "+ m_asymData.eventData.size() + " hadron pairs");
 						for(EventData evtData : m_asymData.eventData)
 						{
+							hQ2VsX.fill(evtData.x, evtData.Q2);
 							for(HadronPairData pairData : evtData.pairData)
 							{
+								
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
 								hM.fill(pairData.M);
