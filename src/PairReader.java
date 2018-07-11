@@ -62,6 +62,8 @@ public class PairReader {
 		hZ=new H1F("Z","Z",100,0,1.0);
 		hM=new H1F("M","M",100,0,3.0);
 		hXf=new H1F("xF","xF",100,-1.0,1.0);
+		hPhiR=new H1F("phiR","phiR",100,0,2*Math.PI);
+		hPhiR=new H1F("phiH","phiH",100,-2*Math.PI,2*Math.PI);
 		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 	}
@@ -101,17 +103,29 @@ public class PairReader {
 		can2D.draw(this.MVsZResolution);
 		can2D.save("twoDResolutions.png");
 		
+
+		EmbeddedCanvas canAngles =new EmbeddedCanvas();
+		canAngles.setSize(1200,600);
+	//	canAngles.divide(2, 1);
+		canAngles.cd(0);
+		canAngles.getPad(0).getAxisX().setTitle("phiR");
+		canAngles.draw(this.hPhiR);
+		//canAngles.getPad(1).getAxisX().setTitle("phiH");
+		//canAngles.cd(1);
+		//canAngles.draw(this.hPhiH);
+		canAngles.save("angles.png");
+		
 		
 		EmbeddedCanvas canKin =new EmbeddedCanvas();
 		canKin.setSize(1200,600);
 		canKin.divide(2, 2);
 		canKin.cd(0);
-		canKin.getPad(0).getAxisY().setTitle("z");
+		canKin.getPad(0).getAxisX().setTitle("z");
 		canKin.draw(this.hZ);
 		canKin.cd(1);
-		canKin.getPad(1).getAxisY().setTitle("M");
+		canKin.getPad(1).getAxisX().setTitle("M");
 		canKin.draw(this.hM);
-		canKin.getPad(2).getAxisY().setTitle("xF");
+		canKin.getPad(2).getAxisX().setTitle("xF");
 		canKin.cd(2);
 		canKin.draw(this.hXf);
 		canKin.save("diHadKins.png");
@@ -154,6 +168,9 @@ public class PairReader {
 								
 								if(pairData.z <0.1 || pairData.xF <0)
 									continue;
+								
+								hPhiR.fill(pairData.phiR);
+							//	hPhiH.fill(pairData.ph);
 								if(pairData.hasMC)
 								{
 									pairsWithMatch++;
