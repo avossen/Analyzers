@@ -26,6 +26,15 @@ public class PairReader {
 	protected H1F zResolution;
 	protected H1F MResolution;
 	
+	protected H1F hPhiR;
+	protected H1F hPhiH;
+	//protected H1F hPhiR;
+	
+	protected H1F hZ;
+	protected H1F hXf;
+	
+	protected H1F hM;
+	
 	protected H2F phiRVsZResolution;
 	protected H2F MVsZResolution;
 	
@@ -50,6 +59,9 @@ public class PairReader {
 		thetaResolution = new H1F("thetaResolution", "thetaResolution", 100, -1.0, 1.0);
 		zResolution = new H1F("zResolution", "zResolution", 100, -1.0, 1.0);
 		MResolution = new H1F("MResolution", "MResolution", 100, -1.0, 1.0);
+		hZ=new H1F("Z","Z",100,0,1.0);
+		hM=new H1F("M","M",100,0,3.0);
+		hXf=new H1F("xF","xF",100,-1.0,1.0);
 		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 	}
@@ -88,6 +100,22 @@ public class PairReader {
 		can2D.cd(1);
 		can2D.draw(this.MVsZResolution);
 		can2D.save("twoDResolutions.png");
+		
+		
+		EmbeddedCanvas canKin =new EmbeddedCanvas();
+		canKin.setSize(1200,600);
+		canKin.divide(2, 2);
+		canKin.cd(0);
+		canKin.getPad(0).getAxisY().setTitle("z");
+		canKin.draw(this.hZ);
+		canKin.cd(1);
+		canKin.getPad(1).getAxisY().setTitle("M");
+		canKin.draw(this.hM);
+		canKin.getPad(2).getAxisY().setTitle("xF");
+		canKin.cd(2);
+		canKin.draw(this.hXf);
+		canKin.save("diHadKins.png");
+		
 	}
 	
 	public void analyze(String[] args)
@@ -120,6 +148,12 @@ public class PairReader {
 						{
 							for(HadronPairData pairData : evtData.pairData)
 							{
+								hXf.fill(pairData.xF);
+								hZ.fill(pairData.z);
+								hM.fill(pairData.M);
+								
+								if(pairData.z <0.1 || pairData.xF <0)
+									continue;
 								if(pairData.hasMC)
 								{
 									pairsWithMatch++;
