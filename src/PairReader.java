@@ -63,7 +63,7 @@ public class PairReader {
 		hM=new H1F("M","M",100,0,3.0);
 		hXf=new H1F("xF","xF",100,-1.0,1.0);
 		hPhiR=new H1F("phiR","phiR",100,0,2*Math.PI);
-		hPhiR=new H1F("phiH","phiH",100,-2*Math.PI,2*Math.PI);
+		hPhiH=new H1F("phiH","phiH",100,-2*Math.PI,2*Math.PI);
 		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 	}
