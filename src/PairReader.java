@@ -56,10 +56,10 @@ public class PairReader {
 	
 	public void initialize()
 	{
-		phiRResolution = new H1F("phiRResolution", "phiRResolution", 100, -1.0, 1.0);
-		thetaResolution = new H1F("thetaResolution", "thetaResolution", 100, -1.0, 1.0);
-		zResolution = new H1F("zResolution", "zResolution", 100, -1.0, 1.0);
-		MResolution = new H1F("MResolution", "MResolution", 100, -1.0, 1.0);
+		phiRResolution = new H1F("phiRResolution", "phiRResolution", 100, -0.3, 0.3);
+		thetaResolution = new H1F("thetaResolution", "thetaResolution", 100, -0.3, 0.3);
+		zResolution = new H1F("zResolution", "zResolution", 100, -0.3, 0.3);
+		MResolution = new H1F("MResolution", "MResolution", 100, -0.3, 0.3);
 		hZ=new H1F("Z","Z",100,0,1.0);
 		hM=new H1F("M","M",100,0,3.0);
 		hXf=new H1F("xF","xF",100,-1.0,1.0);
