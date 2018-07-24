@@ -1,4 +1,5 @@
 import NovelFitters.NovelBaseFitter;
+import NovelFitters.LundPID;
 import NovelFitters.MyParticle;
 import org.jlab.io.hipo.*;
 import org.jlab.io.base.DataEvent;
@@ -32,6 +33,9 @@ public class SimpleAnalyzer {
 	protected H1F hLambdaXf;
 	protected H1F hTrueXf;
 	protected H2F hXfVsZ;
+	
+	protected H2F hPid2[];
+	protected H1F hPid1[];
 
 	protected H1F hLambdaMassRes;
 	protected H1F hTrueLambdaMass;
@@ -100,7 +104,6 @@ public class SimpleAnalyzer {
 		analyzer.plot();
 	}
 	
-
 	//add the hadron pair to the event data
 	protected HadronPairData addHadronPair(HadronPair pair, boolean isMC)
 	{
@@ -141,6 +144,16 @@ public class SimpleAnalyzer {
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
 		m_numEventsWithBanks=0;
+		hPid1=new H1F[7];
+		hPid2=new H2F[7];
+		for(int i=0;i<7;i++)
+		{
+			String s="hpid"+i;
+			hPid2[i]=new H2F(s,s,30,0,10,30,-10,10);
+			s="hpid1"+i;
+			hPid1[i]=new H1F(s,s,30,-10,10.0);
+		}
+		
 		hLambdaMass = new H1F("lambdaMass", "lambdaMass", 100, 1.0, 1.2);
 		hTrueLambdaMass = new H1F("trueLambdaMass", "trueLambdaMass", 100, 1.0, 2.0);
 		hLambdaMassXfCut = new H1F("lambdaMass", "lambdaMass", 100, 1.0, 2.0);
@@ -212,7 +225,7 @@ public class SimpleAnalyzer {
 
 					while (reader.hasEvent() == true) { // cycle through events
 						// load next event in the hipo file
-						//System.out.println("new event----\n\n");
+					//	System.out.println("new event----\n\n");
 						HipoDataEvent event = (HipoDataEvent) reader.getNextEvent();
 						this.m_EvtCountedPIDChi2=false;
 						this.m_EvtCountedKinCuts=false;
@@ -230,17 +243,21 @@ public class SimpleAnalyzer {
 						this.m_numEventsWithBanks++;
 						
 						//numLambdas+=novel_fitter.getNumLambda();
-					//	System.out.println("found2 " + novel_fitter.getNumLambda());
+						//System.out.println("found2 " + novel_fitter.getNumLambda());
 						if (filter.isValid(generic_Event) == true) { // apply filter to current event
 							// look at all particles
+							//System.out.println("valid event");
 							hQ2.fill(novel_fitter.getQ2());
 							hX.fill(novel_fitter.getX());
 							hW.fill(novel_fitter.getW());
 							hQvsX.fill(novel_fitter.getX(), novel_fitter.getQ2());
 							m_numGoodFilterEvts++;
+							//System.out.println("Q2: " + novel_fitter.getQ2() + " w: " + novel_fitter.Walt);
 							if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.0)
 								continue;
+							
 							// grab electron
+							System.out.println("q2 w good");
 							Particle electron = generic_Event.getParticle("[11]");
 						//	System.out.println("found electron with px: "+ electron.px());
 							// get all Pions and then loop over them to get xF, Q2, theta etc
@@ -249,7 +266,7 @@ public class SimpleAnalyzer {
 								//-->
 								associateMCWithData(generic_Event, generic_EventMC);
 							}
-							evtFulfillsMissingMass=false;
+							this.evtFulfillsMissingMass=false; 
 							this.currentEvent=new EventData();
 							currentEvent.Q2=(float)novel_fitter.getQ2();
 							currentEvent.W=(float)novel_fitter.getW();
@@ -402,17 +419,32 @@ public class SimpleAnalyzer {
 	}
 	
 	void doDiHadrons(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC, NovelBaseFitter m_novel_fitter, NovelBaseFitter m_novel_fitterMC) {
-		for (int i = 0; i < generic_Event.count(); i++) {
+		System.out.println("in do dihad with "+generic_Event.count() + "particles ");
+		for (int i = 0; i < generic_Event.count(); i++) 
+		
+		
+		{
 			MyParticle part = (MyParticle) generic_Event.getParticle(i);
+			int sec= part.FTOFsector;
+			if(sec<=0)
+				sec=6;
+			
+			//System.out.println("beta is " + part.beta);
+			this.hPid1[sec].fill(part.beta);
+			this.hPid2[sec].fill(part.p(),part.beta);
+			
+			//System.out.println("time is: " + part.FTOFTime + " sector: " + part.FTOFsector);
 			// System.out.println("matching mc particle index: " +
 			// part.matchingMCPartIndex);
 
-			if (part.pid() == 211) {
+			
+			
+			if (part.pid() == LundPID.Pion.lundCode() || part.pid()==LundPID.Kaon.lundCode()) {
 				
 				for (int j = 0; j < generic_Event.count(); j++) {
 					MyParticle part2 = (MyParticle) generic_Event.getParticle(j);
 					// Systefm.out.println("lookign at pid " + part2.pid());
-					if (part2.pid() == (-211)) {
+					if (part2.pid() == ((-1)*LundPID.Pion.lundCode()) || part2.pid()==((-1)*LundPID.Kaon.lundCode())){
 						
 						if(!this.m_EvtCountedKinCuts)
 						{
@@ -511,6 +543,7 @@ public class SimpleAnalyzer {
 	
 	
 	public void plot() {
+		System.out.println("in plotting function");
 		EmbeddedCanvas can_lambda = new EmbeddedCanvas();
 		can_lambda.setSize(1200, 600);
 		can_lambda.divide(2, 2);
@@ -626,6 +659,29 @@ public class SimpleAnalyzer {
 		can_kinematics.draw(hQvsX);
 		can_kinematics.save("kinematics.png");
 		
+		EmbeddedCanvas can_pid1=new EmbeddedCanvas();
+		can_pid1.setSize(1200,600);
+		can_pid1.divide(4, 2);
+		for(int i=0;i<7;i++)
+		{
+			can_pid1.cd(i);
+			can_pid1.draw(this.hPid1[i]);	
+		}
+		can_pid1.save("pid1.png");
+		System.out.println("saved pid1");
+		
+		EmbeddedCanvas can_pid2=new EmbeddedCanvas();
+		can_pid2.setSize(1200,600);
+		can_pid2.divide(4, 2);
+		for(int i=0;i<7;i++)
+		{
+			can_pid2.cd(i);
+			can_pid2.getPad(i).getAxisZ().setLog(true);
+			
+			System.out.println("aobut to draw pid2 ");
+			can_pid2.draw(this.hPid2[i]);	
+		}
+		can_pid2.save("pid2.png");
 
 	}
 
