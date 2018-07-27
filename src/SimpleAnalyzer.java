@@ -37,6 +37,7 @@ public class SimpleAnalyzer {
 	protected H2F hPid2[];
 	protected H1F hPid1[];
 
+	protected H1F hhpid1;
 	protected H1F hLambdaMassRes;
 	protected H1F hTrueLambdaMass;
 	protected H1F hLambdaMassXfCutRes;
@@ -144,14 +145,15 @@ public class SimpleAnalyzer {
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
 		m_numEventsWithBanks=0;
+		hhpid1=new H1F("hhpid1","hhpid1",30,-20,20);
 		hPid1=new H1F[7];
 		hPid2=new H2F[7];
 		for(int i=0;i<7;i++)
 		{
 			String s="hpid"+i;
-			hPid2[i]=new H2F(s,s,30,0,10,30,-10,10);
+			hPid2[i]=new H2F(s,s,30,0,10,30,-20,20);
 			s="hpid1"+i;
-			hPid1[i]=new H1F(s,s,30,-10,10.0);
+			hPid1[i]=new H1F(s,s,30,-20.0,20.0);
 		}
 		
 		hLambdaMass = new H1F("lambdaMass", "lambdaMass", 100, 1.0, 1.2);
@@ -257,7 +259,7 @@ public class SimpleAnalyzer {
 								continue;
 							
 							// grab electron
-							System.out.println("q2 w good");
+						//	System.out.println("q2 w good");
 							Particle electron = generic_Event.getParticle("[11]");
 						//	System.out.println("found electron with px: "+ electron.px());
 							// get all Pions and then loop over them to get xF, Q2, theta etc
@@ -419,7 +421,7 @@ public class SimpleAnalyzer {
 	}
 	
 	void doDiHadrons(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC, NovelBaseFitter m_novel_fitter, NovelBaseFitter m_novel_fitterMC) {
-		System.out.println("in do dihad with "+generic_Event.count() + "particles ");
+		//System.out.println("in do dihad with "+generic_Event.count() + "particles ");
 		for (int i = 0; i < generic_Event.count(); i++) 
 		
 		
@@ -429,10 +431,21 @@ public class SimpleAnalyzer {
 			if(sec<=0)
 				sec=6;
 			
-			//System.out.println("beta is " + part.beta);
-			this.hPid1[sec].fill(part.beta);
-			this.hPid2[sec].fill(part.p(),part.beta);
-			
+			System.out.println("sec: " + sec+ ", beta is " + part.beta);
+			if(part.beta<10.0 && part.beta>-10.0)
+			{
+				this.hPid1[sec].fill(part.beta);
+				this.hPid2[sec].fill(part.p(),part.beta);
+				
+				
+				
+				
+				if(sec!=6)
+				{
+					System.out.println("fill with beta "+ part.beta);
+				    this.hhpid1.fill((float) part.beta);
+				}
+			}
 			//System.out.println("time is: " + part.FTOFTime + " sector: " + part.FTOFsector);
 			// System.out.println("matching mc particle index: " +
 			// part.matchingMCPartIndex);
@@ -667,6 +680,8 @@ public class SimpleAnalyzer {
 			can_pid1.cd(i);
 			can_pid1.draw(this.hPid1[i]);	
 		}
+		can_pid1.cd(7);
+		can_pid1.draw(hhpid1);
 		can_pid1.save("pid1.png");
 		System.out.println("saved pid1");
 		
@@ -686,7 +701,7 @@ public class SimpleAnalyzer {
 	}
 
 	protected void associateMCWithData(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC) {
-System.out.println("associate");
+//System.out.println("associate");
 		for (int i = 0; i < generic_Event.count(); i++) {
 			double minMomDiff = 1000.0;
 			int minMomDiffIndex = -1;
