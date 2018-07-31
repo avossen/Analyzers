@@ -23,7 +23,7 @@ import java.nio.file.attribute.*;
 import static java.nio.file.FileVisitResult.*;
 import static java.nio.file.FileVisitOption.*;
 import java.util.*;
-
+import java.util.Arrays;
 //import org.jlab.clas12.physics.*;
 
 public class SimpleAnalyzer {
@@ -286,8 +286,6 @@ public class SimpleAnalyzer {
 							
 							
 							//doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
-						
-
 							/**
 							 * ArrayList<Particle> pions = (ArrayList<Particle>)
 							 * generic_Event.getParticleListByPid(211); ArrayList<Particle> pionsMinus =
@@ -730,8 +728,10 @@ public class SimpleAnalyzer {
 				}
 
 				// System.out.println("Looking at MC part "+ j + " rel momDiff: " + ((mom-momMC)/momMC));
-				if (Math.abs(mom - momMC) < 0.025 * momMC && Math.abs(theta - thetaMC) < 1.0
-						&& Math.abs(phi - phiMC) < 5) {
+			//	if (Math.abs(mom - momMC) < 0.025 * momMC && Math.abs(theta - thetaMC) < 1.0 && Math.abs(phi - phiMC) < 5)
+				//let's increase this
+				if (Math.abs(mom - momMC) < 0.05 * momMC && Math.abs(theta - thetaMC) < 2.0 && Math.abs(phi - phiMC) < 10)
+				{
 					if (Math.abs(mom - momMC) < minMomDiff) {
 						minMomDiff = Math.abs(mom - momMC);
 						minMomDiffIndex = j;

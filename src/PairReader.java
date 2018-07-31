@@ -18,7 +18,6 @@ import org.jlab.groot.data.GraphErrors;
 import org.jlab.groot.data.TDirectory;
 import org.jlab.groot.data.H1F;
 
-
 public class PairReader {
 
 	protected H1F phiRResolution;
@@ -39,6 +38,15 @@ public class PairReader {
 	protected H2F MVsZResolution;
 	protected H2F hQ2VsX;
 	
+
+	static int numPhiBins=16;
+	//arrays for asymmetry computation. Let's just to pi+pi for now
+	//so this is indexed in the kinBin, spin state, phi bin
+	protected float[][][] counts;
+	protected float[] meanKin;
+	protected float[][] kinCount;
+	
+	protected ArrayList<Double> phiBins;
 	
 	
 	public static void main(String[] args) 
@@ -68,6 +76,20 @@ public class PairReader {
 		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		hQ2VsX =new H2F("Q2VsX","Q2VsX",20,0.0,1.0,20,0.0,12);
+		
+		counts=new float[Binning.none.numKinBins][2][numPhiBins];
+		meanKin=new float[Binning.none.numKinBins];
+		//also needed for relative luminosity
+		kinCount=new float[Binning.none.numKinBins][2];
+		
+		Arrays.fill(counts, (float)0.0);
+		Arrays.fill(meanKin, (float)0.0);
+		Arrays.fill(kinCount, (float)0.0);
+		
+		for(int i=0;i<numPhiBins;i++)
+		{
+			phiBins.add(((i+1)*2*Math.PI/numPhiBins));
+		}
 		
 	}
 	public void savePlots()
@@ -224,4 +246,26 @@ public class PairReader {
 			}
 		System.out.println("pairs with match " + pairsWithMatch + " pairs without: " +pairsWOMatch + " percentage: " +pairsWithMatch/(float)(pairsWithMatch+pairsWOMatch));
 	}	
+	
+	int getBin(ArrayList<Double> b1, double value)
+	{
+	  int coo1=-1;
+
+	  for(int i=0;i<b1.size();i++)
+	    {
+	      if(value<=b1.get(i))
+	    
+		coo1=i;
+		break;
+		}
+	    }
+	  /*  if(coo1<0)
+	    {
+	        cout <<"wrong coo: val: " << value <<endl;
+		}*/
+	  //  cout <<"value: " << value <<" coo: " << coo1 <<endl;
+	  return coo1;
+	}
+
+	
 	}
