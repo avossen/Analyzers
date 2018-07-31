@@ -195,7 +195,6 @@ public class PairReader {
 							hQ2VsX.fill(evtData.x, evtData.Q2);
 							for(HadronPairData pairData : evtData.pairData)
 							{
-								
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
 								hM.fill(pairData.M);
@@ -204,6 +203,26 @@ public class PairReader {
 									continue;
 								
 								hPhiR.fill(pairData.phiR);
+								double weight=1.0;
+								for(Binning binningType : EnumSet.allOf(Binning.class))
+								{
+								  	int iBin=binningType.getBin(pairData.M,pairData.z,evtData.x);
+								  	int phiBin=binningType.getBin(phiBins, pairData.phiR);
+								  	counts[binningType.binType][evtData.beamPolarization][iBin]+=weight;
+								  	if(binningType==binningType.MBinning)
+								  		meanKin[iBin]+=pairData.M;
+								  	if(binningType==binningType.ZBinning)
+								  		meanKin[iBin]+=pairData.z;
+								  	if(binningType==binningType.XBinning)
+								  		meanKin[iBin]+=evtData.x;
+								}
+								
+								
+								
+								
+								
+								
+								
 							//	hPhiH.fill(pairData.ph);
 								if(pairData.hasMC)
 								{
@@ -247,25 +266,7 @@ public class PairReader {
 		System.out.println("pairs with match " + pairsWithMatch + " pairs without: " +pairsWOMatch + " percentage: " +pairsWithMatch/(float)(pairsWithMatch+pairsWOMatch));
 	}	
 	
-	int getBin(ArrayList<Double> b1, double value)
-	{
-	  int coo1=-1;
-
-	  for(int i=0;i<b1.size();i++)
-	    {
-	      if(value<=b1.get(i))
-	    
-		coo1=i;
-		break;
-		}
-	    }
-	  /*  if(coo1<0)
-	    {
-	        cout <<"wrong coo: val: " << value <<endl;
-		}*/
-	  //  cout <<"value: " << value <<" coo: " << coo1 <<endl;
-	  return coo1;
-	}
+	
 
 	
 	}
