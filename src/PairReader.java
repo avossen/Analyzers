@@ -200,10 +200,17 @@ public class PairReader {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
 									int phiBin = binningType.getBin(phiBins, pairData.phiR);
 									counts[binningType.binType][evtData.beamPolarization][iBin] += weight;
+									kinCount[iBin][evtData.beamPolarization]+=weight;
 									if (binningType == binningType.MBinning)
+									{
 										meanKin[iBin] += pairData.M*weight;
+										
+									}
 									if (binningType == binningType.ZBinning)
+									{
 										meanKin[iBin] += pairData.z*weight;
+										
+									}
 									if (binningType == binningType.XBinning)
 										meanKin[iBin] += evtData.x*weight;
 								}
@@ -290,6 +297,8 @@ public class PairReader {
 			}
 			DataFitter.fit(f1, g, "Q");
 			double amp=f1.getParameter(0);
+			
+			
 		}
 		
 		
