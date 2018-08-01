@@ -20,7 +20,6 @@ import org.jlab.groot.data.TDirectory;
 import org.jlab.groot.data.H1F;
 import org.jlab.groot.fitter.*;
 
-
 public class PairReader {
 
 	protected H1F phiRResolution;
@@ -200,19 +199,17 @@ public class PairReader {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
 									int phiBin = binningType.getBin(phiBins, pairData.phiR);
 									counts[binningType.binType][evtData.beamPolarization][iBin] += weight;
-									kinCount[iBin][evtData.beamPolarization]+=weight;
-									if (binningType == binningType.MBinning)
-									{
-										meanKin[iBin] += pairData.M*weight;
-										
+									kinCount[iBin][evtData.beamPolarization] += weight;
+									if (binningType == binningType.MBinning) {
+										meanKin[iBin] += pairData.M * weight;
+
 									}
-									if (binningType == binningType.ZBinning)
-									{
-										meanKin[iBin] += pairData.z*weight;
-										
+									if (binningType == binningType.ZBinning) {
+										meanKin[iBin] += pairData.z * weight;
+
 									}
 									if (binningType == binningType.XBinning)
-										meanKin[iBin] += evtData.x*weight;
+										meanKin[iBin] += evtData.x * weight;
 								}
 
 								// hPhiH.fill(pairData.ph);
@@ -253,66 +250,76 @@ public class PairReader {
 				}
 			}
 		}
-		//ran over all files, now fit
+		// ran over all files, now fit
 		doFits();
-		
-		
-		
+
 		System.out.println("pairs with match " + pairsWithMatch + " pairs without: " + pairsWOMatch + " percentage: "
 				+ pairsWithMatch / (float) (pairsWithMatch + pairsWOMatch));
 	}
 
-	
-	void doFits()
-	{
-		//still no depolarisation factor and beam polarization
-		F1D f1=new F1D("f1","1+[amp]*sin(x)",-Math.PI,Math.PI);
+	void doFits() {
+
+		// still no depolarisation factor and beam polarization
+		F1D f1 = new F1D("f1", "1+[amp]*sin(x)", -Math.PI, Math.PI);
 		f1.setParameter(0, 0.0);
-		
-		for(int iKin=0;iKin<Binning.none.numKinBins;iKin++)
-		{
-			String s="myFitGraph_"+iKin;
-			GraphErrors g=new GraphErrors(s);
+
+		for (Binning binningType : EnumSet.allOf(Binning.class)) {
+
 			
-			for(int iAngBin=0;iAngBin<numPhiBins;iAngBin++)
-			{
-				double x=0;
-				double y=0;
-				double ex=0;
-				double ey=0;
-				
-				double r=kinCount[iKin][0]/kinCount[iKin][1];
-				double N1=counts[iKin][0][iAngBin];
-				double N2=counts[iKin][1][iAngBin];
-				y=(N1-r*N2)/(N1+r*N2);
-		 
-				//DataFitter fitter;
-				x=(iAngBin+0.5)*2*Math.PI/numPhiBins;
-				//derivative with respect to N1 is 2*r*N2/(N1+N2)^2
-				ey=N1*4*r*r*N2*N2/((N1+N2)*(N1+N2)*(N1+N2)*(N1+N2));
-				ey+=N2*4*r*r*N1*N1/((N1+N2)*(N1+N2)*(N1+N2)*(N1+N2));
-				ey=Math.sqrt(ey);
-				
-				g.addPoint(x, y, ex, ey);		
+			
+			
+			for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
+				String s = "myFitGraph_" + binningType.getBinningName() + "_bin" + iKinBin;
+				GraphErrors g = new GraphErrors(s);
+
+				for (int iAngBin = 0; iAngBin < numPhiBins; iAngBin++) {
+					double x = 0;
+					double y = 0;
+					double ex = 0;
+					double ey = 0;
+
+					double r = kinCount[binningType.getBinType()][0] / kinCount[iKin][1];
+					double N1 = counts[binningType.getBinType()][0][iAngBin];
+					double N2 = counts[binningType.getBinType()][1][iAngBin];
+					y = (N1 - r * N2) / (N1 + r * N2);
+
+					// DataFitter fitter;
+					x = (iAngBin + 0.5) * 2 * Math.PI / numPhiBins;
+					// derivative with respect to N1 is 2*r*N2/(N1+N2)^2
+					ey = N1 * 4 * r * r * N2 * N2 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
+					ey += N2 * 4 * r * r * N1 * N1 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
+					ey = Math.sqrt(ey);
+
+					g.addPoint(x, y, ex, ey);
+				}
+				DataFitter.fit(f1, g, "Q");
+				double amp = f1.parameter(0).value();
+				double ampErr=f1.parameter(0).error();
+		
+				// should save the graph to make sure it looks ok
+				saveGraph(g, s);
 			}
-			DataFitter.fit(f1, g, "Q");
-			double amp=f1.getParameter(0);
-			
-			
 		}
-		
-		
-		
-		
-		
-		//fitHisto.setBinContent(bin, value);
-		//fitHisto.setBinError(bin, value);
-		
+
+		// fitHisto.setBinContent(bin, value);
+		// fitHisto.setBinError(bin, value);
+
 		////////
-		
+
 	}
-	
-	
+
+	void saveGraph(GraphErrors g, String title) {
+
+		// Initialize EmbeddedCanvas and divide it
+		EmbeddedCanvas c1 = new EmbeddedCanvas();
+		c1.setSize(1200, 600);
+		c1.setAxisTitleSize(24);
+		c1.setAxisFontSize(24);
+		String fname = "fitFor" + title + ".png";
+		c1.draw(g);
+		c1.save(fname);
+	}
+
 	double getWeight(HadronPairData data) {
 		double weight = 1.0;
 		return weight;

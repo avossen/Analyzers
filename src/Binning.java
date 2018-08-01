@@ -37,6 +37,35 @@ XBinning(2),none(3);
 		}
 	}
 	
+	public int getNumBins()
+	{
+		return bins.size();
+	}
+	
+	public String getBinningName()
+	{
+		if(binType==0)
+			return "M";
+		if(binType==1)
+			return "Z";
+		if(binType==2)
+			return "X";
+					
+		return "none";	
+	}
+	public String getBinningName(int ibin)
+	{
+		if(ibin==0)
+			return "M";
+		if(ibin==1)
+			return "Z";
+		if(ibin==2)
+			return "X";
+					
+		return "none";	
+	}
+	
+	
 	public int getBin(double value1,double value2, double value3)
 	{
 		double value=0;
