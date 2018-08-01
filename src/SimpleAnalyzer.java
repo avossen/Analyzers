@@ -141,6 +141,8 @@ public class SimpleAnalyzer {
 	
 	public void analyze(String[] args) {
 		
+		NovelBaseFitter.useStefanElectronCuts=false;
+		NovelBaseFitter.useStefanHadronCuts=false;
 		m_numGoodFilterEvts=0;
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
@@ -232,6 +234,7 @@ public class SimpleAnalyzer {
 						this.m_EvtCountedPIDChi2=false;
 						this.m_EvtCountedKinCuts=false;
 						// apply fitter to your data event
+						
 						PhysicsEvent generic_Event = novel_fitter.getPhysicsEvent(event);
 						PhysicsEvent generic_EventMC=new PhysicsEvent();
 						if(isMC)
@@ -240,7 +243,6 @@ public class SimpleAnalyzer {
 						}
 						// System.out.println("Q2: " + novel_fitter.getQ2() + " W: " +
 						// novel_fitter.Walt);
-						
 							
 						this.m_numEventsWithBanks++;
 						
@@ -248,7 +250,7 @@ public class SimpleAnalyzer {
 						//System.out.println("found2 " + novel_fitter.getNumLambda());
 						if (filter.isValid(generic_Event) == true) { // apply filter to current event
 							// look at all particles
-							//System.out.println("valid event");
+							System.out.println("valid event");
 							hQ2.fill(novel_fitter.getQ2());
 							hX.fill(novel_fitter.getX());
 							hW.fill(novel_fitter.getW());
@@ -273,7 +275,9 @@ public class SimpleAnalyzer {
 							currentEvent.Q2=(float)novel_fitter.getQ2();
 							currentEvent.W=(float)novel_fitter.getW();
 							currentEvent.x=(float)novel_fitter.getX();
+							currentEvent.beamHelicity=novel_fitter.getBeamHelicity();
 							this.currentMCEvent=new EventData();
+							currentMCEvent.beamHelicity=0;
 							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
 							//System.out.println("pair data size: "+currentEvent.pairData.size());
 							
@@ -283,8 +287,7 @@ public class SimpleAnalyzer {
 								m_asymData.eventData.add(this.currentEvent);
 								m_asymData.eventDataMC.add(this.currentMCEvent) ;
 							}
-							
-							
+								
 							//doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
 							/**
 							 * ArrayList<Particle> pions = (ArrayList<Particle>)
@@ -691,7 +694,7 @@ public class SimpleAnalyzer {
 			can_pid2.cd(i);
 			can_pid2.getPad(i).getAxisZ().setLog(true);
 			
-			System.out.println("aobut to draw pid2 ");
+		//	System.out.println("aobut to draw pid2 ");
 			can_pid2.draw(this.hPid2[i]);	
 		}
 		can_pid2.save("pid2.png");

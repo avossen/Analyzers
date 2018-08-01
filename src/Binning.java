@@ -8,7 +8,7 @@ XBinning(2),none(3);
 	
 	protected int binType;
 	protected ArrayList<Double> bins;
-	public final int numKinBins=3;
+	public static final int numKinBins=3;
 	
 	Binning(int iBin)
 	{
@@ -18,7 +18,7 @@ XBinning(2),none(3);
 		{
 			bins.add(0.4);
 			bins.add(0.8);
-			bins.add(1000);
+			bins.add(1000.0);
 		
 		}
 		//z binning

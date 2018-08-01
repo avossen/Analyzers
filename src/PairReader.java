@@ -16,7 +16,7 @@ import org.jlab.groot.fitter.ParallelSliceFitter;
 import org.jlab.groot.graphics.EmbeddedCanvas;
 import org.jlab.groot.math.F1D;
 import org.jlab.groot.data.GraphErrors;
-import org.jlab.groot.data.TDirectory;
+
 import org.jlab.groot.data.H1F;
 import org.jlab.groot.fitter.*;
 
@@ -41,11 +41,12 @@ public class PairReader {
 	protected H2F hQ2VsX;
 
 	static int numPhiBins = 16;
+	static int maxKinBins=10;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
-	protected float[][][] counts;
-	protected float[] meanKin;
-	protected float[][] kinCount;
+	protected float[][][][] counts;
+	protected float[][] meanKin;
+	protected float[][][] kinCount;
 
 	protected ArrayList<Double> phiBins;
 
@@ -72,10 +73,10 @@ public class PairReader {
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		hQ2VsX = new H2F("Q2VsX", "Q2VsX", 20, 0.0, 1.0, 20, 0.0, 12);
 
-		counts = new float[Binning.none.numKinBins][2][numPhiBins];
-		meanKin = new float[Binning.none.numKinBins];
+		counts = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
+		meanKin = new float[Binning.numKinBins][maxKinBins];
 		// also needed for relative luminosity
-		kinCount = new float[Binning.none.numKinBins][2];
+		kinCount = new float[Binning.numKinBins][2][maxKinBins];
 
 		Arrays.fill(counts, (float) 0.0);
 		Arrays.fill(meanKin, (float) 0.0);
@@ -198,18 +199,18 @@ public class PairReader {
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
 									int phiBin = binningType.getBin(phiBins, pairData.phiR);
-									counts[binningType.binType][evtData.beamPolarization][iBin] += weight;
-									kinCount[iBin][evtData.beamPolarization] += weight;
-									if (binningType == binningType.MBinning) {
-										meanKin[iBin] += pairData.M * weight;
+									counts[binningType.binType][evtData.beamHelicity][iBin][phiBin] += weight;
+									kinCount[iBin][evtData.beamHelicity][iBin] += weight;
+									if (binningType == Binning.MBinning) {
+										meanKin[binningType.binType][iBin] += pairData.M * weight;
 
 									}
-									if (binningType == binningType.ZBinning) {
-										meanKin[iBin] += pairData.z * weight;
+									if (binningType == Binning.ZBinning) {
+										meanKin[binningType.binType][iBin] += pairData.z * weight;
 
 									}
-									if (binningType == binningType.XBinning)
-										meanKin[iBin] += evtData.x * weight;
+									if (binningType == Binning.XBinning)
+										meanKin[binningType.binType][iBin] += evtData.x * weight;
 								}
 
 								// hPhiH.fill(pairData.ph);
@@ -265,8 +266,10 @@ public class PairReader {
 
 		for (Binning binningType : EnumSet.allOf(Binning.class)) {
 
-			
-			
+			double vals[]=new double[binningType.getNumBins()];
+			double valErrs[]=new double[binningType.getNumBins()];
+			double xVals[]=new double[binningType.getNumBins()];
+			double xErrVals[]=new double[binningType.getNumBins()];
 			
 			for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
 				String s = "myFitGraph_" + binningType.getBinningName() + "_bin" + iKinBin;
@@ -278,27 +281,50 @@ public class PairReader {
 					double ex = 0;
 					double ey = 0;
 
-					double r = kinCount[binningType.getBinType()][0] / kinCount[iKin][1];
-					double N1 = counts[binningType.getBinType()][0][iAngBin];
-					double N2 = counts[binningType.getBinType()][1][iAngBin];
-					y = (N1 - r * N2) / (N1 + r * N2);
-
+					double r=1.0;
+					if(kinCount[binningType.getBinType()][1][iKinBin]>0)
+					{
+					 r = kinCount[binningType.getBinType()][0][iKinBin] / kinCount[binningType.getBinType()][1][iKinBin];
+					}
+					else
+					{
+						System.out.println("no counts  (r) for phi bin "+iAngBin+" "+s );
+					}
+					double N1 = counts[binningType.getBinType()][0][iKinBin][iAngBin];
+					double N2 = counts[binningType.getBinType()][1][iKinBin][iAngBin];
+					if((N1+r*N2)>0)
+					{
+						y = (N1 - r * N2) / (N1 + r * N2);
+						ey = N1 * 4 * r * r * N2 * N2 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
+						ey += N2 * 4 * r * r * N1 * N1 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
+						ey = Math.sqrt(ey);
+					}
+					else 
+					{
+						System.out.println("no counts for phi bin "+iAngBin+" "+s );
+						y=0;
+						ey=0;
+					}
 					// DataFitter fitter;
 					x = (iAngBin + 0.5) * 2 * Math.PI / numPhiBins;
 					// derivative with respect to N1 is 2*r*N2/(N1+N2)^2
-					ey = N1 * 4 * r * r * N2 * N2 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
-					ey += N2 * 4 * r * r * N1 * N1 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
-					ey = Math.sqrt(ey);
+					
 
 					g.addPoint(x, y, ex, ey);
 				}
 				DataFitter.fit(f1, g, "Q");
-				double amp = f1.parameter(0).value();
-				double ampErr=f1.parameter(0).error();
-		
+				vals[iKinBin] = f1.parameter(0).value();
+				valErrs[iKinBin]=f1.parameter(0).error();
+				if((kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin])>0)
+					xVals[iKinBin]=this.meanKin[binningType.binType][iKinBin]/(kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin]);
+				else
+					System.out.println("no mean vals for "+ s);
 				// should save the graph to make sure it looks ok
 				saveGraph(g, s);
 			}
+			
+			String title="Asyms_" + binningType.getBinningName();
+			saveKinGraph(xVals,xErrVals,vals,valErrs, title);
 		}
 
 		// fitHisto.setBinContent(bin, value);
@@ -308,6 +334,17 @@ public class PairReader {
 
 	}
 
+	void saveKinGraph(double[] xVals, double[] xValErrs, double[] vals,double[] valErrs, String title)
+	{
+		GraphErrors g=new GraphErrors(title,xVals,vals,xValErrs,valErrs);
+		EmbeddedCanvas c1 = new EmbeddedCanvas();
+		c1.setSize(1200, 600);
+		c1.setAxisTitleSize(24);
+		c1.setAxisFontSize(24);
+		String fname = title + ".png";
+		c1.draw(g);
+		c1.save(fname);
+	}
 	void saveGraph(GraphErrors g, String title) {
 
 		// Initialize EmbeddedCanvas and divide it
