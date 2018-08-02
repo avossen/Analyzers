@@ -250,7 +250,7 @@ public class SimpleAnalyzer {
 						//System.out.println("found2 " + novel_fitter.getNumLambda());
 						if (filter.isValid(generic_Event) == true) { // apply filter to current event
 							// look at all particles
-							System.out.println("valid event");
+							//System.out.println("valid event");
 							hQ2.fill(novel_fitter.getQ2());
 							hX.fill(novel_fitter.getX());
 							hW.fill(novel_fitter.getW());
