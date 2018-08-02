@@ -554,6 +554,7 @@ public class SimpleAnalyzer {
 	public void saveData(String hipoFilename)
 	{
 		String filename=hipoFilename.substring(0, hipoFilename.lastIndexOf('.'));
+		filename=filename.substring(filename.lastIndexOf('/')+1,filename.length());
 		filename=filename+".srn";
 		System.out.println("saving java output to: " + filename);
 		try
@@ -569,9 +570,6 @@ public class SimpleAnalyzer {
 		{
 			System.out.println("IOException is caught");
 		}
-		
-		
-		
 	}
 	
 	
