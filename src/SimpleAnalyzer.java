@@ -68,6 +68,7 @@ public class SimpleAnalyzer {
 	protected H1F hZ;
 	protected H2F hQvsX;
 	
+	protected HipoDataSource reader;
 	protected int matchCounter;
 	protected int noMatchCounter;
 	protected int m_numGoodFilterEvts;	
@@ -82,7 +83,7 @@ public class SimpleAnalyzer {
 	protected final double m_pi = 0.1396;
 	protected NovelBaseFitter novel_fitter;
 	protected NovelBaseFitter novel_fitterMC;
-	
+	protected EventFilter filter;
 	
 	AsymData m_asymData;
 	//ArrayList<EventData> m_eventData;
@@ -140,7 +141,7 @@ public class SimpleAnalyzer {
 	}
 	
 	public void analyze(String[] args) {
-		
+		reader= new HipoDataSource();
 		NovelBaseFitter.useStefanElectronCuts=true;
 		NovelBaseFitter.useStefanHadronCuts=true;
 		m_numGoodFilterEvts=0;
@@ -198,7 +199,7 @@ public class SimpleAnalyzer {
 		hDiPionMissingMass= new H1F("diPIonMissingMass","diPionMissingMass",100,0,6.0);
 
 		int numLambdas=0;
-		HipoDataSource reader = new HipoDataSource();
+		
 		// define fitter class, argument is the beam energy (GeV)
 		 novel_fitter = new NovelBaseFitter(10.6,false,false);
 		//novel_fitter = new NovelBaseFitter(10.6, true, true);
@@ -211,107 +212,29 @@ public class SimpleAnalyzer {
 		// neutral
 		// particles (Xn)
 		//EventFilter filter = new EventFilter("11:X+:X-:Xn");
-		EventFilter filter = new EventFilter("11:+211:-211:X+:X-:Xn");
-		File folder = new File(args[0]);
-		File[] listOfFiles = folder.listFiles();
-		for (int iF = 0; iF < listOfFiles.length; iF++) {
-			if (listOfFiles[iF].isFile()) {
-				System.out.println("File " + listOfFiles[iF].getName());
-				PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:*.{hipo}");
-
-				Path filename = Paths.get(listOfFiles[iF].getName());
-				if (matcher.matches(filename)) {
-					//one asymmetry file per data input file
-					this.m_asymData=new AsymData();
-					System.out.println("matched" + filename);
-
-					reader.open(args[0] + listOfFiles[iF].getName()); // open hipo file
-
-					while (reader.hasEvent() == true) { // cycle through events
-						// load next event in the hipo file
-						//System.out.println("new event----\n\n");
-						HipoDataEvent event = (HipoDataEvent) reader.getNextEvent();
-						this.m_EvtCountedPIDChi2=false;
-						this.m_EvtCountedKinCuts=false;
-						// apply fitter to your data event
-						
-						PhysicsEvent generic_Event = novel_fitter.getPhysicsEvent(event);
-						PhysicsEvent generic_EventMC=new PhysicsEvent();
-						if(isMC)
-						{
-							generic_EventMC = novel_fitterMC.getPhysicsEvent(event);
-						}
-						// System.out.println("Q2: " + novel_fitter.getQ2() + " W: " +
-						// novel_fitter.Walt);
-							
-						this.m_numEventsWithBanks++;
-						
-						//numLambdas+=novel_fitter.getNumLambda();
-						//System.out.println("found2 " + novel_fitter.getNumLambda());
-						if (filter.isValid(generic_Event) == true) { // apply filter to current event
-							// look at all particles
-							//System.out.println("valid event");
-							hQ2.fill(novel_fitter.getQ2());
-							hX.fill(novel_fitter.getX());
-							hW.fill(novel_fitter.getW());
-							hQvsX.fill(novel_fitter.getX(), novel_fitter.getQ2());
-							m_numGoodFilterEvts++;
-							//System.out.println("Q2: " + novel_fitter.getQ2() + " w: " + novel_fitter.Walt);
-							if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.0)
-								continue;
-							
-							// grab electron
-						//	System.out.println("q2 w good");
-							Particle electron = generic_Event.getParticle("[11]");
-						//	System.out.println("found electron with px: "+ electron.px());
-							// get all Pions and then loop over them to get xF, Q2, theta etc
-							if(isMC)
-							{
-								//-->
-								associateMCWithData(generic_Event, generic_EventMC);
-							}
-							this.evtFulfillsMissingMass=false; 
-							this.currentEvent=new EventData();
-							currentEvent.Q2=(float)novel_fitter.getQ2();
-							currentEvent.W=(float)novel_fitter.getW();
-							currentEvent.x=(float)novel_fitter.getX();
-							currentEvent.beamHelicity=novel_fitter.getBeamHelicity();
-							this.currentMCEvent=new EventData();
-							currentMCEvent.beamHelicity=0;
-							doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
-							//System.out.println("pair data size: "+currentEvent.pairData.size());
-							
-							if(this.currentEvent.pairData.size()>0)
-							{		
-								//System.out.println("pair data size: "+currentEvent.pairData.size());
-								m_asymData.eventData.add(this.currentEvent);
-								m_asymData.eventDataMC.add(this.currentMCEvent) ;
-							}
-								
-							//doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
-							/**
-							 * ArrayList<Particle> pions = (ArrayList<Particle>)
-							 * generic_Event.getParticleListByPid(211); ArrayList<Particle> pionsMinus =
-							 * (ArrayList<Particle>) generic_Event.getParticleListByPid(-211);
-							 * System.out.println("found " + pions.size() + "pions+ and " +
-							 * pionsMinus.size() +" pi-");
-							 * 
-							 * for(Particle pion: pions) {
-							 * 
-							 * //also try to find protons and combine to Lambdas List<Particle> protons =
-							 * generic_Event.getParticlesByPid(2212); for(Particle proton: protons) {
-							 * 
-							 * 
-							 * } }
-							 */
-
-							
-						}
+		 filter = new EventFilter("11:+211:-211:X+:X-:Xn");
+		//check if args[0] is already a hipo file, else run over all in the folder
+		Path singlefilename = Paths.get(args[0]);
+		//two * crosses directory boundaries...
+		PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:**.{hipo}");
+		if (matcher.matches(singlefilename)) 
+		{
+			//System.out.println("matched single file");
+			//singlefilename should already contain the full path, so don't add args[0], instead args[0] is the filename
+			readData("", args[0]);
+		}
+		else
+		{
+			File folder = new File(args[0]);
+			File[] listOfFiles = folder.listFiles();
+			for (int iF = 0; iF < listOfFiles.length; iF++) {
+				if (listOfFiles[iF].isFile()) {
+					System.out.println("File " + listOfFiles[iF].getName());
+					Path filename = Paths.get(listOfFiles[iF].getName());
+					if (matcher.matches(filename)) {
+						readData(args[0], listOfFiles[iF].getName());
 					}
-					this.saveData(listOfFiles[iF].getName());
 				}
-				reader.close();
-				
 			}
 		}
 		System.out.println("num evts: " + this.m_numEventsWithBanks + " filtered: " + this.m_numGoodFilterEvts + " numWithQ2, W cuts: "+ this.m_numEvtsWithKinCuts+ " and with chi2pid cuts: "+ this.m_numEvtsWithPIDChi2);
@@ -319,6 +242,97 @@ public class SimpleAnalyzer {
 	//	System.out.println("match found " + matchCounter + " nomatch: " + noMatchCounter + " percent "+ matchCounter/(matchCounter+noMatchCounter));
 	}
 
+	void readData(String args0, String filename)
+	{
+			//one asymmetry file per data input file
+			this.m_asymData=new AsymData();
+			System.out.println("matched" + filename);
+			reader.open(args0 + filename); // open hipo file
+			while (reader.hasEvent() == true) { // cycle through events
+				// load next event in the hipo file
+				//System.out.println("new event----\n\n");
+				HipoDataEvent event = (HipoDataEvent) reader.getNextEvent();
+				this.m_EvtCountedPIDChi2=false;
+				this.m_EvtCountedKinCuts=false;
+				// apply fitter to your data event
+				
+				PhysicsEvent generic_Event = novel_fitter.getPhysicsEvent(event);
+				PhysicsEvent generic_EventMC=new PhysicsEvent();
+				if(isMC)
+				{
+					generic_EventMC = novel_fitterMC.getPhysicsEvent(event);
+				}
+				// System.out.println("Q2: " + novel_fitter.getQ2() + " W: " +
+				// novel_fitter.Walt);
+					
+				this.m_numEventsWithBanks++;
+				
+				//numLambdas+=novel_fitter.getNumLambda();
+				//System.out.println("found2 " + novel_fitter.getNumLambda());
+				if (filter.isValid(generic_Event) == true) { // apply filter to current event
+					// look at all particles
+					//System.out.println("valid event");
+					hQ2.fill(novel_fitter.getQ2());
+					hX.fill(novel_fitter.getX());
+					hW.fill(novel_fitter.getW());
+					hQvsX.fill(novel_fitter.getX(), novel_fitter.getQ2());
+					m_numGoodFilterEvts++;
+					//System.out.println("Q2: " + novel_fitter.getQ2() + " w: " + novel_fitter.Walt);
+					if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.0)
+						continue;
+					
+					// grab electron
+				//	System.out.println("q2 w good");
+					Particle electron = generic_Event.getParticle("[11]");
+				//	System.out.println("found electron with px: "+ electron.px());
+					// get all Pions and then loop over them to get xF, Q2, theta etc
+					if(isMC)
+					{
+						//-->
+						associateMCWithData(generic_Event, generic_EventMC);
+					}
+					this.evtFulfillsMissingMass=false; 
+					this.currentEvent=new EventData();
+					currentEvent.Q2=(float)novel_fitter.getQ2();
+					currentEvent.W=(float)novel_fitter.getW();
+					currentEvent.x=(float)novel_fitter.getX();
+					currentEvent.beamHelicity=novel_fitter.getBeamHelicity();
+					this.currentMCEvent=new EventData();
+					currentMCEvent.beamHelicity=0;
+					doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
+					//System.out.println("pair data size: "+currentEvent.pairData.size());
+					
+					if(this.currentEvent.pairData.size()>0)
+					{		
+						//System.out.println("pair data size: "+currentEvent.pairData.size());
+						m_asymData.eventData.add(this.currentEvent);
+						m_asymData.eventDataMC.add(this.currentMCEvent) ;
+					}
+						
+					//doLambdas(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
+					/**
+					 * ArrayList<Particle> pions = (ArrayList<Particle>)
+					 * generic_Event.getParticleListByPid(211); ArrayList<Particle> pionsMinus =
+					 * (ArrayList<Particle>) generic_Event.getParticleListByPid(-211);
+					 * System.out.println("found " + pions.size() + "pions+ and " +
+					 * pionsMinus.size() +" pi-");
+					 * 
+					 * for(Particle pion: pions) {
+					 * 
+					 * //also try to find protons and combine to Lambdas List<Particle> protons =
+					 * generic_Event.getParticlesByPid(2212); for(Particle proton: protons) {
+					 * 
+					 * 
+					 * } }
+					 */
+
+					
+				}
+			}
+			this.saveData(filename);
+		    reader.close();
+	}
+	
 	void doLambdas(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC, NovelBaseFitter m_novel_fitter, NovelBaseFitter m_novel_fitterMC)
 	{
 		for (int i = 0; i < generic_Event.count(); i++) {
