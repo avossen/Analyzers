@@ -40,7 +40,7 @@ public class PairReader {
 	protected H2F MVsZResolution;
 	protected H2F hQ2VsX;
 
-	static int numPhiBins = 16;
+	static int numPhiBins = 2;
 	static int maxKinBins=10;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
@@ -72,15 +72,16 @@ public class PairReader {
 		MVsZResolution = new H2F("MVsZResolution", "MVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		hQ2VsX = new H2F("Q2VsX", "Q2VsX", 20, 0.0, 1.0, 20, 0.0, 12);
-
+		phiBins=new ArrayList<Double>();
 		counts = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
 		meanKin = new float[Binning.numKinBins][maxKinBins];
 		// also needed for relative luminosity
 		kinCount = new float[Binning.numKinBins][2][maxKinBins];
 
-		Arrays.fill(counts, (float) 0.0);
-		Arrays.fill(meanKin, (float) 0.0);
-		Arrays.fill(kinCount, (float) 0.0);
+		//can't do this with multidimensional arrays (but default is already 0)
+		//Arrays.fill(counts, (float) 0.0);
+		//Arrays.fill(meanKin, (float) 0.0);
+		//Arrays.fill(kinCount, (float) 0.0);
 
 		for (int i = 0; i < numPhiBins; i++) {
 			phiBins.add(((i + 1) * 2 * Math.PI / numPhiBins));
@@ -199,8 +200,23 @@ public class PairReader {
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
 									int phiBin = binningType.getBin(phiBins, pairData.phiR);
-									counts[binningType.binType][evtData.beamHelicity][iBin][phiBin] += weight;
-									kinCount[iBin][evtData.beamHelicity][iBin] += weight;
+									if(iBin<0)
+									{
+										System.out.println("kinematic bin too small " + binningType.name() + " m: " +pairData.M +" z: "+ pairData.z +" x: " + evtData.x);
+									}
+									if(phiBin<0)
+									{
+										System.out.println("phi value " + pairData.phiR + " out of bounds");
+									}
+									
+									//do it that way since e.g. for mc data we get -99
+									int helicityIndex=0;
+									if(evtData.beamHelicity>0)
+										helicityIndex=1;
+									
+									
+									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
+									kinCount[iBin][helicityIndex][iBin] += weight;
 									if (binningType == Binning.MBinning) {
 										meanKin[binningType.binType][iBin] += pairData.M * weight;
 
@@ -284,11 +300,11 @@ public class PairReader {
 					double r=1.0;
 					if(kinCount[binningType.getBinType()][1][iKinBin]>0)
 					{
-					 r = kinCount[binningType.getBinType()][0][iKinBin] / kinCount[binningType.getBinType()][1][iKinBin];
+						r = kinCount[binningType.getBinType()][0][iKinBin] / kinCount[binningType.getBinType()][1][iKinBin];
 					}
 					else
 					{
-						System.out.println("no counts  (r) for phi bin "+iAngBin+" "+s );
+						System.out.println("no counts (r) for phi bin "+iAngBin+" "+s );
 					}
 					double N1 = counts[binningType.getBinType()][0][iKinBin][iAngBin];
 					double N2 = counts[binningType.getBinType()][1][iKinBin][iAngBin];

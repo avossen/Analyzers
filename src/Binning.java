@@ -3,7 +3,7 @@ import java.util.ArrayList;
 public enum Binning {
 MBinning(0),
 ZBinning(1),
-XBinning(2),none(3);
+XBinning(2);
 
 	
 	protected int binType;
@@ -12,27 +12,28 @@ XBinning(2),none(3);
 	
 	Binning(int iBin)
 	{
+		bins=new ArrayList<Double >();
 		binType=iBin;
 		//m binning
 		if(iBin==0)
 		{
-			bins.add(0.4);
-			bins.add(0.8);
+	//		bins.add(0.4);
+			//bins.add(0.8);
 			bins.add(1000.0);
 		
 		}
 		//z binning
 		if(iBin==1)
 		{
-			bins.add(0.3);
-			bins.add(0.6);
+	//		bins.add(0.3);
+			//bins.add(0.6);
 			bins.add(1.2);
 		}
 		//x binning
 		if(iBin==2)
 		{
-			bins.add(0.05);
-			bins.add(0.2);
+	//		bins.add(0.05);
+			//bins.add(0.2);
 			bins.add(1.2);	
 		}
 	}
@@ -41,7 +42,7 @@ XBinning(2),none(3);
 	{
 		return bins.size();
 	}
-	
+	//unnecessary since enum already has name() function
 	public String getBinningName()
 	{
 		if(binType==0)
@@ -78,14 +79,17 @@ XBinning(2),none(3);
 		if(binType==2)
 			value=value3;
 		
+		//System.out.println("getting bin for binType " + binType + " value: " + value);
 	  int coo1=-1;
 
 	  for(int i=0;i<bins.size();i++)
 	    {
+		//  System.out.println("compare to " + bins.get(i));
 	      if(value<=bins.get(i))
-	    
-	    	  coo1=i;
-	      break;
+	      {
+	    	  	coo1=i;
+	    	  	break;
+	      }
 		}
 	    
 	  /*  if(coo1<0)
@@ -108,10 +112,10 @@ public int getBin(ArrayList<Double> b1, double value)
   for(int i=0;i<b1.size();i++)
     {
       if(value<=b1.get(i))
-    
+      {
 	coo1=i;
 	break;
-	
+      }
     }
   /*  if(coo1<0)
     {

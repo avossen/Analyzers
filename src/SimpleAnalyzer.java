@@ -99,8 +99,8 @@ public class SimpleAnalyzer {
 			System.exit(0);
 		}
 		SimpleAnalyzer analyzer = new SimpleAnalyzer();
-		analyzer.isMC=true;
-		//analyzer.isMC=false;
+		//analyzer.isMC=true;
+		analyzer.isMC=false;
 		analyzer.analyze(args);
 		analyzer.plot();
 	}
@@ -126,7 +126,7 @@ public class SimpleAnalyzer {
 		{
 			if(pair.hasMatchingMC)
 			{
-				System.out.println("has mc");
+				//System.out.println("has mc");
 				data.hasMC=true;
 				data.matchingMCPair=pair.matchingMCData;
 			}
@@ -141,8 +141,8 @@ public class SimpleAnalyzer {
 	
 	public void analyze(String[] args) {
 		
-		NovelBaseFitter.useStefanElectronCuts=false;
-		NovelBaseFitter.useStefanHadronCuts=false;
+		NovelBaseFitter.useStefanElectronCuts=true;
+		NovelBaseFitter.useStefanHadronCuts=true;
 		m_numGoodFilterEvts=0;
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
@@ -229,7 +229,7 @@ public class SimpleAnalyzer {
 
 					while (reader.hasEvent() == true) { // cycle through events
 						// load next event in the hipo file
-					//	System.out.println("new event----\n\n");
+						//System.out.println("new event----\n\n");
 						HipoDataEvent event = (HipoDataEvent) reader.getNextEvent();
 						this.m_EvtCountedPIDChi2=false;
 						this.m_EvtCountedKinCuts=false;
@@ -308,9 +308,10 @@ public class SimpleAnalyzer {
 							
 						}
 					}
+					this.saveData(listOfFiles[iF].getName());
 				}
 				reader.close();
-				this.saveData(listOfFiles[iF].getName());
+				
 			}
 		}
 		System.out.println("num evts: " + this.m_numEventsWithBanks + " filtered: " + this.m_numGoodFilterEvts + " numWithQ2, W cuts: "+ this.m_numEvtsWithKinCuts+ " and with chi2pid cuts: "+ this.m_numEvtsWithPIDChi2);
@@ -432,7 +433,7 @@ public class SimpleAnalyzer {
 			if(sec<=0)
 				sec=6;
 			
-			System.out.println("sec: " + sec+ ", beta is " + part.beta);
+			//System.out.println("sec: " + sec+ ", beta is " + part.beta);
 			if(part.beta<10.0 && part.beta>-10.0)
 			{
 				this.hPid1[sec].fill(part.beta);
@@ -443,7 +444,7 @@ public class SimpleAnalyzer {
 				
 				if(sec!=6)
 				{
-					System.out.println("fill with beta "+ part.beta);
+					//System.out.println("fill with beta "+ part.beta);
 				    this.hhpid1.fill((float) part.beta);
 				}
 			}
@@ -480,7 +481,7 @@ public class SimpleAnalyzer {
 						 hZ.fill(pair.getZ());
 						 hDiPionMissingMass.fill(pair.getMissingMass());
 						 
-						if(pair.getMissingMass()>1.05);
+						if(pair.getMissingMass()>1.05 && pair.getZ()<0.95)
 						{
 							evtFulfillsMissingMass=true;
 							if(part.m_chi2pid<=5.0 && part2.m_chi2pid<=5.0)
@@ -492,7 +493,11 @@ public class SimpleAnalyzer {
 								}
 							}
 						}
-						
+						else
+						{
+							continue;
+						}
+					
 						
 						LorentzVector pionPair = new LorentzVector(part.px() + part2.px(), part.py() + part2.py(),
 								part.pz() + part2.pz(), part.e() + part2.e());
