@@ -293,6 +293,7 @@ public class SimpleAnalyzer {
 					}
 					this.evtFulfillsMissingMass=false; 
 					this.currentEvent=new EventData();
+					currentEvent.y=(float)novel_fitter.getY();
 					currentEvent.Q2=(float)novel_fitter.getQ2();
 					currentEvent.W=(float)novel_fitter.getW();
 					currentEvent.x=(float)novel_fitter.getX();

@@ -11,6 +11,7 @@ public class EventData implements Serializable {
 	public float Q2;
 	public float W;
 	public float x;
+	public float y;
 	public float beamPolarization;
 	public int beamHelicity;
 	public ArrayList<HadronPairData> pairData;
