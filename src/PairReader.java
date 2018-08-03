@@ -84,6 +84,7 @@ public class PairReader {
 		//Arrays.fill(kinCount, (float) 0.0);
 
 		for (int i = 0; i < numPhiBins; i++) {
+			System.out.println("adding phi bin "+((i + 1) * 2 * Math.PI / numPhiBins));
 			phiBins.add(((i + 1) * 2 * Math.PI / numPhiBins));
 		}
 
@@ -176,9 +177,18 @@ public class PairReader {
 					// Deserialization
 					try {
 						// Reading the object from a file
-						FileInputStream file = new FileInputStream(filename.toString());
-						ObjectInputStream in = new ObjectInputStream(file);
-
+						ObjectInputStream in=null;
+						FileInputStream file=null;
+						try 
+						{
+							file = new FileInputStream(args[0]+"/"+filename.toString());
+							in = new ObjectInputStream(file);
+						}
+						catch(IOException e)
+						{
+							System.out.println("Caught IO exception: " + e.getMessage());
+							throw e;
+						}
 						// Method for deserialization of object
 						m_asymData = (AsymData) in.readObject();
 						System.out.println("got " + m_asymData.eventData.size() + " hadron pairs");
@@ -188,7 +198,7 @@ public class PairReader {
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
 								hM.fill(pairData.M);
-
+								System.out.println("helicity: " + evtData.beamHelicity);
 								if (pairData.z < 0.1 || pairData.xF < 0)
 									continue;
 
@@ -197,9 +207,14 @@ public class PairReader {
 								if (pairData.hasMC) {
 									weight = getWeight(pairData.matchingMCPair);
 								}
+								int phiBin = Binning.getBin(phiBins, pairData.phiR);
+								System.out.println("phiR: "+pairData.phiR+ " bin: "+ phiBin);
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
-									int phiBin = binningType.getBin(phiBins, pairData.phiR);
+									//int phiBin = binningType.getBin(phiBins, pairData.phiR);
+						
+									System.out.println("kin bin " + binningType.name() + " m: " +pairData.M +" z: "+ pairData.z +" x: " + evtData.x+ " bin: "+ iBin);
+				
 									if(iBin<0)
 									{
 										System.out.println("kinematic bin too small " + binningType.name() + " m: " +pairData.M +" z: "+ pairData.z +" x: " + evtData.x);
@@ -216,7 +231,7 @@ public class PairReader {
 									
 									
 									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
-									kinCount[iBin][helicityIndex][iBin] += weight;
+									kinCount[binningType.binType][helicityIndex][iBin] += weight;
 									if (binningType == Binning.MBinning) {
 										meanKin[binningType.binType][iBin] += pairData.M * weight;
 
@@ -277,7 +292,7 @@ public class PairReader {
 	void doFits() {
 
 		// still no depolarisation factor and beam polarization
-		F1D f1 = new F1D("f1", "1+[amp]*sin(x)", -Math.PI, Math.PI);
+		F1D f1 = new F1D("f1", "0+[amp]*sin(x)", 0.0, 2*Math.PI);
 		f1.setParameter(0, 0.0);
 
 		for (Binning binningType : EnumSet.allOf(Binning.class)) {
@@ -352,6 +367,7 @@ public class PairReader {
 
 	void saveKinGraph(double[] xVals, double[] xValErrs, double[] vals,double[] valErrs, String title)
 	{
+		System.out.println("saving kin graph");
 		GraphErrors g=new GraphErrors(title,xVals,vals,xValErrs,valErrs);
 		EmbeddedCanvas c1 = new EmbeddedCanvas();
 		c1.setSize(1200, 600);
@@ -360,9 +376,11 @@ public class PairReader {
 		String fname = title + ".png";
 		c1.draw(g);
 		c1.save(fname);
+		System.out.println("done");
+		
 	}
 	void saveGraph(GraphErrors g, String title) {
-
+		System.out.println("saving normal graph");
 		// Initialize EmbeddedCanvas and divide it
 		EmbeddedCanvas c1 = new EmbeddedCanvas();
 		c1.setSize(1200, 600);
@@ -371,6 +389,7 @@ public class PairReader {
 		String fname = "fitFor" + title + ".png";
 		c1.draw(g);
 		c1.save(fname);
+		System.out.println("done");
 	}
 
 	double getWeight(HadronPairData data) {

@@ -18,7 +18,7 @@ XBinning(2);
 		if(iBin==0)
 		{
 	//		bins.add(0.4);
-			//bins.add(0.8);
+			bins.add(0.8);
 			bins.add(1000.0);
 		
 		}
@@ -26,14 +26,14 @@ XBinning(2);
 		if(iBin==1)
 		{
 	//		bins.add(0.3);
-			//bins.add(0.6);
+			bins.add(0.6);
 			bins.add(1.2);
 		}
 		//x binning
 		if(iBin==2)
 		{
 	//		bins.add(0.05);
-			//bins.add(0.2);
+			bins.add(0.2);
 			bins.add(1.2);	
 		}
 	}
@@ -105,7 +105,7 @@ public int getBinType()
 return binType;	
 }
 //for the phi bins(external)
-public int getBin(ArrayList<Double> b1, double value)
+public static int getBin(ArrayList<Double> b1, double value)
 {
   int coo1=-1;
 
