@@ -10,6 +10,9 @@ import java.util.*;
 
 import org.jlab.clas.physics.*;
 import org.jlab.groot.data.H2F;
+import org.jlab.groot.base.PadMargins;
+import org.jlab.groot.base.Attributes;
+import org.jlab.groot.base.GStyle;
 import org.jlab.io.base.DataBank;
 import org.jlab.io.base.DataEvent;
 import org.jlab.groot.fitter.ParallelSliceFitter;
@@ -25,6 +28,8 @@ public class PairReader {
 	protected H1F phiRResolution;
 	protected H1F thetaResolution;
 	protected H1F zResolution;
+	protected H1F hY;
+	protected H1F hWy;
 	protected H1F MResolution;
 
 	protected H1F hPhiR;
@@ -40,18 +45,28 @@ public class PairReader {
 	protected H2F MVsZResolution;
 	protected H2F hQ2VsX;
 
-	static int numPhiBins = 2;
+	static int numPhiBins = 8;
 	static int maxKinBins=10;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
 	protected float[][][][] counts;
 	protected float[][] meanKin;
+	protected float[][] meanWy;
 	protected float[][][] kinCount;
 
 	protected ArrayList<Double> phiBins;
 
 	public static void main(String[] args) {
-
+		GStyle.getGraphErrorsAttributes().setMarkerStyle(0);
+		GStyle.getGraphErrorsAttributes().setMarkerColor(3);
+		GStyle.getGraphErrorsAttributes().setMarkerSize(7);
+		GStyle.getGraphErrorsAttributes().setLineColor(3);
+		GStyle.getGraphErrorsAttributes().setLineWidth(3);
+		GStyle.getAxisAttributesX().setTitleFontSize(34);
+		GStyle.getAxisAttributesX().setLabelFontSize(10);
+		GStyle.getAxisAttributesY().setTitleFontSize(32);
+		GStyle.getAxisAttributesY().setLabelFontSize(10);
+		
 		PairReader myReader = new PairReader();
 		myReader.initialize();
 		myReader.analyze(args);
@@ -64,6 +79,8 @@ public class PairReader {
 		thetaResolution = new H1F("thetaResolution", "thetaResolution", 100, -0.3, 0.3);
 		zResolution = new H1F("zResolution", "zResolution", 100, -0.3, 0.3);
 		MResolution = new H1F("MResolution", "MResolution", 100, -0.3, 0.3);
+		hY=new H1F("Y", "Y", 100, -0.3, 1.2);
+		hWy=new H1F("Wy", "Wy", 100, -0.3, 1.2);
 		hZ = new H1F("Z", "Z", 100, 0, 1.0);
 		hM = new H1F("M", "M", 100, 0, 3.0);
 		hXf = new H1F("xF", "xF", 100, -1.0, 1.0);
@@ -75,6 +92,7 @@ public class PairReader {
 		phiBins=new ArrayList<Double>();
 		counts = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
 		meanKin = new float[Binning.numKinBins][maxKinBins];
+		meanWy = new float[Binning.numKinBins][maxKinBins];
 		// also needed for relative luminosity
 		kinCount = new float[Binning.numKinBins][2][maxKinBins];
 
@@ -94,10 +112,10 @@ public class PairReader {
 		EmbeddedCanvas can_piPi = new EmbeddedCanvas();
 		can_piPi.setSize(1200, 600);
 		can_piPi.divide(2, 2);
-		can_piPi.setAxisTitleSize(24);
-		can_piPi.setAxisFontSize(24);
+		//can_piPi.setAxisTitleSize(24);
+		//can_piPi.setAxisFontSize(24);
 
-		can_piPi.setTitleSize(24);
+	//	can_piPi.setTitleSize(24);
 		can_piPi.cd(0);
 		can_piPi.getPad(0).getAxisX().setTitle("phiR Resolution");
 		can_piPi.getPad(1).getAxisX().setTitle("theta Resolution");
@@ -141,12 +159,13 @@ public class PairReader {
 
 		EmbeddedCanvas canKin = new EmbeddedCanvas();
 		canKin.setSize(1200, 600);
-		canKin.divide(2, 2);
+		canKin.divide(2, 3);
 		canKin.cd(0);
 		canKin.getPad(0).getAxisX().setTitle("z");
 		canKin.draw(this.hZ);
 		canKin.cd(1);
 		canKin.getPad(1).getAxisX().setTitle("M");
+		
 		canKin.draw(this.hM);
 		canKin.getPad(2).getAxisX().setTitle("xF");
 		canKin.cd(2);
@@ -156,6 +175,12 @@ public class PairReader {
 		canKin.getPad(3).getAxisY().setTitle("Q2");
 		canKin.getPad(3).getAxisZ().setLog(true);
 		canKin.draw(this.hQ2VsX);
+		canKin.cd(4);
+		canKin.getPad(4).getAxisX().setTitle("Y");
+		canKin.draw(this.hY);
+		canKin.cd(5);
+		canKin.getPad(5).getAxisX().setTitle("Wy");
+		canKin.draw(this.hWy);
 		canKin.save("diHadKins.png");
 
 	}
@@ -194,11 +219,20 @@ public class PairReader {
 						System.out.println("got " + m_asymData.eventData.size() + " hadron pairs");
 						for (EventData evtData : m_asymData.eventData) {
 							hQ2VsX.fill(evtData.x, evtData.Q2);
+							//kinematic factor W(y) (asymmetry is ~W(y) x e(x)
+							double Wy=0;
+							if(evtData.y>0)
+								Wy=2*evtData.y*Math.sqrt(1-evtData.y);
+							else
+								continue;
+							
+							hY.fill(evtData.y);
+							hWy.fill(Wy);
 							for (HadronPairData pairData : evtData.pairData) {
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
 								hM.fill(pairData.M);
-								System.out.println("helicity: " + evtData.beamHelicity);
+								//System.out.println("helicity: " + evtData.beamHelicity);
 								if (pairData.z < 0.1 || pairData.xF < 0)
 									continue;
 
@@ -208,12 +242,12 @@ public class PairReader {
 									weight = getWeight(pairData.matchingMCPair);
 								}
 								int phiBin = Binning.getBin(phiBins, pairData.phiR);
-								System.out.println("phiR: "+pairData.phiR+ " bin: "+ phiBin);
+								//System.out.println("phiR: "+pairData.phiR+ " bin: "+ phiBin);
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
 									//int phiBin = binningType.getBin(phiBins, pairData.phiR);
 						
-									System.out.println("kin bin " + binningType.name() + " m: " +pairData.M +" z: "+ pairData.z +" x: " + evtData.x+ " bin: "+ iBin);
+								//	System.out.println("kin bin " + binningType.name() + " m: " +pairData.M +" z: "+ pairData.z +" x: " + evtData.x+ " bin: "+ iBin);
 				
 									if(iBin<0)
 									{
@@ -232,9 +266,10 @@ public class PairReader {
 									
 									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
 									kinCount[binningType.binType][helicityIndex][iBin] += weight;
+									meanWy[binningType.binType][iBin] += Wy * weight;
 									if (binningType == Binning.MBinning) {
 										meanKin[binningType.binType][iBin] += pairData.M * weight;
-
+									
 									}
 									if (binningType == Binning.ZBinning) {
 										meanKin[binningType.binType][iBin] += pairData.z * weight;
@@ -347,9 +382,16 @@ public class PairReader {
 				vals[iKinBin] = f1.parameter(0).value();
 				valErrs[iKinBin]=f1.parameter(0).error();
 				if((kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin])>0)
+				{
 					xVals[iKinBin]=this.meanKin[binningType.binType][iKinBin]/(kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin]);
+					double wyFactor=this.meanWy[binningType.binType][iKinBin]/(kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin]);
+					vals[iKinBin]/=wyFactor;
+					valErrs[iKinBin]/=wyFactor;
+				}
 				else
+				{
 					System.out.println("no mean vals for "+ s);
+				}
 				// should save the graph to make sure it looks ok
 				saveGraph(g, s);
 			}
@@ -371,10 +413,19 @@ public class PairReader {
 		GraphErrors g=new GraphErrors(title,xVals,vals,xValErrs,valErrs);
 		EmbeddedCanvas c1 = new EmbeddedCanvas();
 		c1.setSize(1200, 600);
-		c1.setAxisTitleSize(24);
-		c1.setAxisFontSize(24);
+		//c1.setAxisTitleSize(24);
+		//c1.setAxisFontSize(24);
+		//PadMargins margins=new PadMargins();
+		//margins.setLeftMargin(20);
+		//margins.setBottomMargin(20);
+		//margins.setRightMargin(20);
+		//margins.setTopMargin(20);
+		//c1.getPad().setMargins(margins);
+		//c1.getPad(0).setMargins(margins);
 		String fname = title + ".png";
+		c1.update();
 		c1.draw(g);
+		c1.update();
 		c1.save(fname);
 		System.out.println("done");
 		
@@ -384,10 +435,12 @@ public class PairReader {
 		// Initialize EmbeddedCanvas and divide it
 		EmbeddedCanvas c1 = new EmbeddedCanvas();
 		c1.setSize(1200, 600);
-		c1.setAxisTitleSize(24);
-		c1.setAxisFontSize(24);
+		//c1.setAxisTitleSize(24);
+		//c1.setAxisFontSize(24);
 		String fname = "fitFor" + title + ".png";
+		c1.update();
 		c1.draw(g);
+		c1.update();
 		c1.save(fname);
 		System.out.println("done");
 	}

@@ -7,6 +7,7 @@ public class HadronPairData implements Serializable {
 	public float xF;
 	public float weight;
 	public float phiR;
+	public float phiH;
 	public float M;
 	public float theta;
 	public boolean hasMC;

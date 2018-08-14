@@ -110,6 +110,7 @@ public class SimpleAnalyzer {
 	protected HadronPairData addHadronPair(HadronPair pair, boolean isMC)
 	{
 		HadronPairData data=new HadronPairData();
+		data.phiH=(float)pair.getPhiH();
 		data.M=(float)pair.getMass();
 		data.phiR=(float)pair.getPhiR();
 		data.pTBreit=(float)pair.getPt();
@@ -294,6 +295,7 @@ public class SimpleAnalyzer {
 					this.evtFulfillsMissingMass=false; 
 					this.currentEvent=new EventData();
 					currentEvent.y=(float)novel_fitter.getY();
+					//System.out.println("y: " + novel_fitter.getY() + " q2 "+ novel_fitter.getQ2());
 					currentEvent.Q2=(float)novel_fitter.getQ2();
 					currentEvent.W=(float)novel_fitter.getW();
 					currentEvent.x=(float)novel_fitter.getX();
