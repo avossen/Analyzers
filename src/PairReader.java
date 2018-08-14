@@ -50,6 +50,7 @@ public class PairReader {
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
 	protected float[][][][] counts;
+	protected float[][][][] countsG1P;
 	protected float[][] meanKin;
 	protected float[][] meanWy;
 	protected float[][][] kinCount;
@@ -91,6 +92,8 @@ public class PairReader {
 		hQ2VsX = new H2F("Q2VsX", "Q2VsX", 20, 0.0, 1.0, 20, 0.0, 12);
 		phiBins=new ArrayList<Double>();
 		counts = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
+		countsG1P= new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
+		
 		meanKin = new float[Binning.numKinBins][maxKinBins];
 		meanWy = new float[Binning.numKinBins][maxKinBins];
 		// also needed for relative luminosity
@@ -242,6 +245,7 @@ public class PairReader {
 									weight = getWeight(pairData.matchingMCPair);
 								}
 								int phiBin = Binning.getBin(phiBins, pairData.phiR);
+								int phiBinG1P = Binning.getBin(phiBins, pairData.phiH-pairData.phiR);
 								//System.out.println("phiR: "+pairData.phiR+ " bin: "+ phiBin);
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
@@ -265,6 +269,7 @@ public class PairReader {
 									
 									
 									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
+									countsG1P[binningType.binType][helicityIndex][iBin][phiBinG1P] += weight;
 									kinCount[binningType.binType][helicityIndex][iBin] += weight;
 									meanWy[binningType.binType][iBin] += Wy * weight;
 									if (binningType == Binning.MBinning) {
@@ -318,15 +323,20 @@ public class PairReader {
 			}
 		}
 		// ran over all files, now fit
-		doFits();
-
+		doFits(false);
+		doFits(true);
 		System.out.println("pairs with match " + pairsWithMatch + " pairs without: " + pairsWOMatch + " percentage: "
 				+ pairsWithMatch / (float) (pairsWithMatch + pairsWOMatch));
 	}
 
-	void doFits() {
-
+	void doFits(boolean doG1P) {
+		float loc_counts[][][][];
+		if(doG1P)
+			 loc_counts=countsG1P;
+		else
+			loc_counts=counts;
 		// still no depolarisation factor and beam polarization
+		//same function for both, e(x) and G1P
 		F1D f1 = new F1D("f1", "0+[amp]*sin(x)", 0.0, 2*Math.PI);
 		f1.setParameter(0, 0.0);
 
@@ -336,9 +346,13 @@ public class PairReader {
 			double valErrs[]=new double[binningType.getNumBins()];
 			double xVals[]=new double[binningType.getNumBins()];
 			double xErrVals[]=new double[binningType.getNumBins()];
-			
+			String baseTitle;
+			if(doG1P)
+				baseTitle="G1P_";
+			else
+				baseTitle="ex_"
 			for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
-				String s = "myFitGraph_" + binningType.getBinningName() + "_bin" + iKinBin;
+				String s = "myFitGraph_"+baseTitle + binningType.getBinningName() + "_bin" + iKinBin;
 				GraphErrors g = new GraphErrors(s);
 
 				for (int iAngBin = 0; iAngBin < numPhiBins; iAngBin++) {
@@ -356,8 +370,8 @@ public class PairReader {
 					{
 						System.out.println("no counts (r) for phi bin "+iAngBin+" "+s );
 					}
-					double N1 = counts[binningType.getBinType()][0][iKinBin][iAngBin];
-					double N2 = counts[binningType.getBinType()][1][iKinBin][iAngBin];
+					double N1 = loc_counts[binningType.getBinType()][0][iKinBin][iAngBin];
+					double N2 = loc_counts[binningType.getBinType()][1][iKinBin][iAngBin];
 					if((N1+r*N2)>0)
 					{
 						y = (N1 - r * N2) / (N1 + r * N2);
@@ -396,7 +410,7 @@ public class PairReader {
 				saveGraph(g, s);
 			}
 			
-			String title="Asyms_" + binningType.getBinningName();
+			String title="Asyms_"+baseTitle + binningType.getBinningName();
 			saveKinGraph(xVals,xErrVals,vals,valErrs, title);
 		}
 
