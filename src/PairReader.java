@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.io.Serializable;
 import java.util.*;
+import java.util.StringTokenizer;
 
 import org.jlab.clas.physics.*;
 import org.jlab.groot.data.H2F;
@@ -45,6 +46,9 @@ public class PairReader {
 	protected H2F MVsZResolution;
 	protected H2F hQ2VsX;
 
+	//is the halfway plate in
+	protected boolean hwpIn=false;
+	
 	static int numPhiBins = 16;
 	static int maxKinBins=10;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
@@ -203,6 +207,41 @@ public class PairReader {
 				Path filename = Paths.get(listOfFiles[iF].getName());
 				if (matcher.matches(filename)) {
 					// Deserialization
+					//check run number from filename, so we can determine halfway plate 
+					//position
+					int runNumber=0;
+					StringTokenizer st=new StringTokenizer(listOfFiles[iF].getName(),"_");
+				   for(int i=0;st.hasMoreTokens();i++)
+				   {
+					   String t1=st.nextToken();
+					 //  System.out.println("token " + i + ": "+ t1);
+					   if(t1.contentEquals("out"))
+					   {
+						   System.out.println("passed first check");
+						   String t2=st.nextToken();
+						//   System.out.println("next token " + i + ": "+ t2);
+						   if(t2.contentEquals("clas"))
+						   {
+							  
+							   String t3=st.nextToken(".");
+							   //need to strip off leading "_" if we use "." token.
+							   t3=t3.substring(1, t3.length());
+							   //System.out.println("getting run number "+t3);
+							   runNumber=Integer.parseInt(t3);
+							 
+						   }
+					   }
+				   }
+				   //System.out.println("looking at run: " + runNumber);
+				   try {
+					hwpIn=getHWPInfo(runNumber); 
+				   }
+				   catch(Exception e)
+				   {
+					   System.out.println("wrong runnumber");
+					   continue;
+				   }
+					
 					try {
 						// Reading the object from a file
 						ObjectInputStream in=null;
@@ -266,6 +305,14 @@ public class PairReader {
 									int helicityIndex=0;
 									if(evtData.beamHelicity>0)
 										helicityIndex=1;
+									//flip helicities
+									if(hwpIn)
+									{
+										if(helicityIndex==1)
+											helicityIndex=0;
+										else
+											helicityIndex=1;
+									}
 									
 									
 									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
@@ -468,5 +515,40 @@ public class PairReader {
 		double weight = 1.0;
 		return weight;
 	}
+	
+	boolean getHWPInfo(int runNumber) throws Exception
+	{
+//		4239-4326     OUT
+//		4122-4238     IN
+//		3999-4120     OUT
+//		3819-3998     IN
+//		3690-3818    OUT
+//		3479-3551    IN
+//		3243-3475   OUT
+//		3232-3241   IN
+//		3213-3229   OUT
+		if(runNumber>=4239 && runNumber <=4326)
+			return false;
+		if(runNumber>=4122 && runNumber <=4238)
+			return true;
+		if(runNumber>=3999 && runNumber <=4120)
+			return false;
+		if(runNumber>=3819 && runNumber <=3998)
+			return true;
+		if(runNumber>=3690 && runNumber <=3818)
+			return false;
+		if(runNumber>=3479 && runNumber <=3551)
+			return true;
+		if(runNumber>=3243 && runNumber <=3475)
+			return false;
+		if(runNumber>=3232 && runNumber <=3241)
+			return true;
+		if(runNumber>=3213 && runNumber <=3229)
+			return false;
+		//uncovered range
+		throw new Exception("hwp runnumber "+ runNumber+ " unknown");
+		
+	}
+	
 
 }
