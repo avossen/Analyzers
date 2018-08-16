@@ -17,7 +17,7 @@ XBinning(2);
 		//m binning
 		if(iBin==0)
 		{
-	//		bins.add(0.4);
+			bins.add(0.4);
 			bins.add(0.8);
 			bins.add(1000.0);
 		
@@ -25,15 +25,16 @@ XBinning(2);
 		//z binning
 		if(iBin==1)
 		{
-	//		bins.add(0.3);
+			bins.add(0.3);
 			bins.add(0.6);
 			bins.add(1.2);
 		}
 		//x binning
 		if(iBin==2)
 		{
-	//		bins.add(0.05);
+		
 			bins.add(0.2);
+			bins.add(0.4);
 			bins.add(1.2);	
 		}
 	}

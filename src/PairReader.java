@@ -45,7 +45,7 @@ public class PairReader {
 	protected H2F MVsZResolution;
 	protected H2F hQ2VsX;
 
-	static int numPhiBins = 8;
+	static int numPhiBins = 16;
 	static int maxKinBins=10;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
@@ -269,7 +269,7 @@ public class PairReader {
 									
 									
 									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
-									countsG1P[binningType.binType][helicityIndex][iBin][phiBinG1P] += weight;
+									countsG1P[binningType.binType][helicityIndex][iBin][phiBinG1P] += weight*pairData.pTBreit/pairData.M;
 									kinCount[binningType.binType][helicityIndex][iBin] += weight;
 									meanWy[binningType.binType][iBin] += Wy * weight;
 									if (binningType == Binning.MBinning) {
@@ -350,7 +350,7 @@ public class PairReader {
 			if(doG1P)
 				baseTitle="G1P_";
 			else
-				baseTitle="ex_"
+				baseTitle="ex_";
 			for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
 				String s = "myFitGraph_"+baseTitle + binningType.getBinningName() + "_bin" + iKinBin;
 				GraphErrors g = new GraphErrors(s);
@@ -399,6 +399,11 @@ public class PairReader {
 				{
 					xVals[iKinBin]=this.meanKin[binningType.binType][iKinBin]/(kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin]);
 					double wyFactor=this.meanWy[binningType.binType][iKinBin]/(kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin]);
+					if(doG1P)
+					{
+						//should be this A'/C' factor, but couldn't find definition
+						wyFactor=1.0;
+					}
 					vals[iKinBin]/=wyFactor;
 					valErrs[iKinBin]/=wyFactor;
 				}

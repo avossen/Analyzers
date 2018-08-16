@@ -115,26 +115,22 @@ hasMatchingMC=false;
 		m_mass = pionPair.mass();
 		LorentzVector boostedPair = new LorentzVector(pionPair);
 		boostedPair.boost(m_breitBoost);
-		// we are in the breit frame now, so I guess that the transverse component
-		// should already be Pht
-		double px = boostedPair.vect().x();
-		double py = boostedPair.vect().y();
-
-		// I guess the photon is not along the z axis after all
-		double phT = Math.sqrt(px * px + py * py);
-		pT = phT;
-		double otherPt = vecQ.cross(pionPair.vect()).mag();
+		Vector3 vecQUnit = new Vector3();
+		vecQUnit.setMagThetaPhi(1.0, vecQ.theta(), vecQ.phi());
+		Vector3 vecQLabUnit = new Vector3();
+		vecQLabUnit.setMagThetaPhi(1.0, vecQLab.theta(), vecQLab.phi());
+		//double otherPt = vecQ.cross(pionPair.vect()).mag();
+		double otherPt = vecQUnit.cross(boostedPair.vect()).mag();
 		// System.out.println("pt " + pT + " or "+otherPT);
 		pT = otherPt;
 		// mag of cross product should be sin(theta)*|pionPair| (photon vector is unit
 		// vector
-		pTLab = vecQLab.cross(pionPair.vect()).mag();
-		// System.out.println("pt " + pT + " or "+pTLab);
+		pTLab = vecQLabUnit.cross(pionPair.vect()).mag();
+		//System.out.println("pt " + pT + " or "+pTLab);
 		xF = boostedPair.pz() / m_W;
 		z = pionPair.e() / m_qE;
 
-		Vector3 vecQUnit = new Vector3();
-		vecQUnit.setMagThetaPhi(1.0, vecQ.theta(), vecQ.phi());
+	
 		LorentzVector vh1 = new LorentzVector(m_h1.px(), m_h1.py(), m_h1.pz(), m_h1.e());
 		LorentzVector vh1T = new LorentzVector(vh1);
 		Vector3 pairBoostVect = boostedPair.boostVector();
