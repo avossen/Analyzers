@@ -49,8 +49,9 @@ public class PairReader {
 	//is the halfway plate in
 	protected boolean hwpIn=false;
 	
-	static int numPhiBins = 16;
-	static int maxKinBins=10;
+	static int numPhiBins = 8;
+	//this is driven by the run numbers
+	static int maxKinBins=32;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
 	protected float[][][][] counts;
@@ -209,6 +210,7 @@ public class PairReader {
 					// Deserialization
 					//check run number from filename, so we can determine halfway plate 
 					//position
+					//is also in the dst's but not in my srn files (yet)
 					int runNumber=0;
 					StringTokenizer st=new StringTokenizer(listOfFiles[iF].getName(),"_");
 				   for(int i=0;st.hasMoreTokens();i++)
@@ -217,7 +219,7 @@ public class PairReader {
 					 //  System.out.println("token " + i + ": "+ t1);
 					   if(t1.contentEquals("out"))
 					   {
-						   System.out.println("passed first check");
+						 //  System.out.println("passed first check");
 						   String t2=st.nextToken();
 						//   System.out.println("next token " + i + ": "+ t2);
 						   if(t2.contentEquals("clas"))
@@ -242,6 +244,10 @@ public class PairReader {
 					   continue;
 				   }
 					
+				   if(runNumber==4020|| runNumber == 4301)
+				   {
+					   //continue;
+				   }
 					try {
 						// Reading the object from a file
 						ObjectInputStream in=null;
@@ -287,7 +293,7 @@ public class PairReader {
 								int phiBinG1P = Binning.getBin(phiBins, pairData.phiH-pairData.phiR);
 								//System.out.println("phiR: "+pairData.phiR+ " bin: "+ phiBin);
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
-									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x);
+									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x,runNumber);
 									//int phiBin = binningType.getBin(phiBins, pairData.phiR);
 						
 								//	System.out.println("kin bin " + binningType.name() + " m: " +pairData.M +" z: "+ pairData.z +" x: " + evtData.x+ " bin: "+ iBin);
@@ -308,6 +314,7 @@ public class PairReader {
 									//flip helicities
 									if(hwpIn)
 									{
+										System.out.println("change helicyt index");
 										if(helicityIndex==1)
 											helicityIndex=0;
 										else
@@ -329,6 +336,8 @@ public class PairReader {
 									}
 									if (binningType == Binning.XBinning)
 										meanKin[binningType.binType][iBin] += evtData.x * weight;
+									if (binningType == Binning.RunBinning)
+										meanKin[binningType.binType][iBin] += runNumber * weight;
 								}
 
 								// hPhiH.fill(pairData.ph);
@@ -386,7 +395,7 @@ public class PairReader {
 		//same function for both, e(x) and G1P
 		F1D f1 = new F1D("f1", "0+[amp]*sin(x)", 0.0, 2*Math.PI);
 		f1.setParameter(0, 0.0);
-
+		//f1.setParameter(1, 0.0);
 		for (Binning binningType : EnumSet.allOf(Binning.class)) {
 
 			double vals[]=new double[binningType.getNumBins()];
@@ -422,8 +431,8 @@ public class PairReader {
 					if((N1+r*N2)>0)
 					{
 						y = (N1 - r * N2) / (N1 + r * N2);
-						ey = N1 * 4 * r * r * N2 * N2 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
-						ey += N2 * 4 * r * r * N1 * N1 / ((N1 + N2) * (N1 + N2) * (N1 + N2) * (N1 + N2));
+						ey = N1 * 4 * r * r * N2 * N2 / ((N1 + r*N2) * (N1 + r*N2) * (N1 + r*N2) * (N1 + r*N2));
+						ey += N2 * 4 * r * r * N1 * N1 / ((N1 + r*N2) * (N1 + r*N2) * (N1 + r*N2) * (N1 + r*N2));
 						ey = Math.sqrt(ey);
 					}
 					else 
@@ -442,6 +451,9 @@ public class PairReader {
 				DataFitter.fit(f1, g, "Q");
 				vals[iKinBin] = f1.parameter(0).value();
 				valErrs[iKinBin]=f1.parameter(0).error();
+				
+				
+				
 				if((kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin])>0)
 				{
 					xVals[iKinBin]=this.meanKin[binningType.binType][iKinBin]/(kinCount[binningType.getBinType()][0][iKinBin]+kinCount[binningType.getBinType()][1][iKinBin]);
@@ -458,6 +470,7 @@ public class PairReader {
 				{
 					System.out.println("no mean vals for "+ s);
 				}
+				System.out.println("iKinbin: "+ iKinBin + " val: "+ vals[iKinBin]+" err: "+valErrs[iKinBin]+" xval: "+ xVals[iKinBin]);
 				// should save the graph to make sure it looks ok
 				saveGraph(g, s);
 			}

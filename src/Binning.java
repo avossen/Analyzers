@@ -3,12 +3,12 @@ import java.util.ArrayList;
 public enum Binning {
 MBinning(0),
 ZBinning(1),
-XBinning(2);
-
+XBinning(2),
+RunBinning(3);
 	
 	protected int binType;
 	protected ArrayList<Double> bins;
-	public static final int numKinBins=3;
+	public static final int numKinBins=4;
 	
 	Binning(int iBin)
 	{
@@ -37,6 +37,44 @@ XBinning(2);
 			bins.add(0.4);
 			bins.add(1.2);	
 		}
+		//runNumber
+		if(iBin==3)
+		{
+			bins.add(4013.0);
+			bins.add(4014.0);
+			bins.add(4015.0);
+			bins.add(4016.0);
+			bins.add(4017.0);
+			bins.add(4018.0);
+			bins.add(4020.0);
+			bins.add(4021.0);
+			bins.add(4022.0);
+			bins.add(4025.0);
+			bins.add(4026.0);
+			bins.add(4027.0);
+			bins.add(4028.0);
+			bins.add(4030.0);
+			bins.add(4032.0);
+			bins.add(4033.0);
+			bins.add(4037.0);
+			bins.add(4038.0);
+			bins.add(4039.0);
+			bins.add(4041.0);
+			bins.add(4044.0);
+			//bins.add(4050.0);
+			bins.add(4053.0);
+			bins.add(4067.0);
+			bins.add(4069.0);
+			bins.add(4078.0);
+			bins.add(4301.0);
+			bins.add(4302.0);
+			bins.add(4303.0);
+			bins.add(4304.0);
+			bins.add(4305.0);
+		//	bins.add(4306.0);
+			bins.add(4307.0);
+			bins.add(4308.0);
+		}
 	}
 	
 	public int getNumBins()
@@ -52,7 +90,8 @@ XBinning(2);
 			return "Z";
 		if(binType==2)
 			return "X";
-					
+		if(binType==3)
+			return "run";	
 		return "none";	
 	}
 	public String getBinningName(int ibin)
@@ -63,12 +102,13 @@ XBinning(2);
 			return "Z";
 		if(ibin==2)
 			return "X";
-					
+		if(ibin==3)
+			return "run";
 		return "none";	
 	}
 	
 	
-	public int getBin(double value1,double value2, double value3)
+	public int getBin(double value1,double value2, double value3, double value4)
 	{
 		double value=0;
 		if(binType==0)
@@ -79,7 +119,8 @@ XBinning(2);
 			value=value2;
 		if(binType==2)
 			value=value3;
-		
+		if(binType==3)
+			value=value4;
 		//System.out.println("getting bin for binType " + binType + " value: " + value);
 	  int coo1=-1;
 
@@ -114,8 +155,8 @@ public static int getBin(ArrayList<Double> b1, double value)
     {
       if(value<=b1.get(i))
       {
-	coo1=i;
-	break;
+    	  coo1=i;
+    	  break;
       }
     }
   /*  if(coo1<0)
