@@ -80,7 +80,7 @@ public class HadronPair {
 	// takes virtual photon and Was parameter
 	public HadronPair(MyParticle h1, MyParticle h2, LorentzVector lv_q, LorentzVector lv_l, double W,
 			Vector3 breitBoost) {
-hasMatchingMC=false;	
+		hasMatchingMC=false;	
 		m_h1 = h1;
 		m_h2 = h2;
 		m_breitBoost = breitBoost;

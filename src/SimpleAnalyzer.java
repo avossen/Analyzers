@@ -84,7 +84,7 @@ public class SimpleAnalyzer {
 	protected NovelBaseFitter novel_fitter;
 	protected NovelBaseFitter novel_fitterMC;
 	protected EventFilter filter;
-	
+	protected boolean printDebug=true;
 	AsymData m_asymData;
 	//ArrayList<EventData> m_eventData;
 	//ArrayList<EventData> m_mcEventData;
@@ -143,8 +143,9 @@ public class SimpleAnalyzer {
 	
 	public void analyze(String[] args) {
 		reader= new HipoDataSource();
-		NovelBaseFitter.useStefanElectronCuts=true;
-		NovelBaseFitter.useStefanHadronCuts=true;
+		//for debugging, use eventbuilder
+		NovelBaseFitter.useStefanElectronCuts=false;
+		NovelBaseFitter.useStefanHadronCuts=false;
 		m_numGoodFilterEvts=0;
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
@@ -273,6 +274,14 @@ public class SimpleAnalyzer {
 				if (filter.isValid(generic_Event) == true) { // apply filter to current event
 					// look at all particles
 					//System.out.println("valid event");
+					if(printDebug)
+					{
+					   printEventInfo(generic_Event);
+						
+					}
+					
+					
+					
 					hQ2.fill(novel_fitter.getQ2());
 					hX.fill(novel_fitter.getX());
 					hW.fill(novel_fitter.getW());
@@ -304,7 +313,10 @@ public class SimpleAnalyzer {
 					currentMCEvent.beamHelicity=0;
 					doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
 					//System.out.println("pair data size: "+currentEvent.pairData.size());
-					
+					if(printDebug)
+					{
+						printDiHadrons(generic_Event);
+					}
 					if(this.currentEvent.pairData.size()>0)
 					{		
 						//System.out.println("pair data size: "+currentEvent.pairData.size());
@@ -765,6 +777,52 @@ public class SimpleAnalyzer {
 			part.matchingMCPartIndex = minMomDiffIndex;
 		}
 
+	}
+	void printEventInfo(PhysicsEvent generic_Event)
+	{
+		double Q2=novel_fitter.getQ2();
+		double W=novel_fitter.getQ2();
+		double x=novel_fitter.getX();
+		double y=novel_fitter.getY();
+		
+		System.out.printf("Run: %d Evt %d: Q2: %.2f x: %.2f W: %.2f y:: %.2f\n", novel_fitter.getRunNumber(),novel_fitter.getEvtNumber(),Q2,x,W,y);
+		System.out.println("Found " + (generic_Event.count()) + " particles: ");
+		for (int i = 0; i < generic_Event.count(); i++) 
+		{
+			MyParticle part = (MyParticle) generic_Event.getParticle(i);
+			int pid=part.pid();
+			double mom=part.p();
+			int charge=part.charge();
+			System.out.printf("PID: %d p: %.2f\n", pid,mom);
+		
+		}
+		
+	}
+	void printDiHadrons(PhysicsEvent generic_Event)
+	{
+		for (int i = 0; i < generic_Event.count(); i++) 
+		{
+			MyParticle part = (MyParticle) generic_Event.getParticle(i);
+			//System.out.println("lookint at first pid " + part.pid());
+			if (part.pid() == LundPID.Pion.lundCode()) {
+			//	System.out.println("lookint at first pid " + part.pid());
+				for (int j = 0; j < generic_Event.count(); j++) {
+					MyParticle part2 = (MyParticle) generic_Event.getParticle(j);
+			//		System.out.println("lookign at second pid " + part2.pid());
+					if (part2.pid() == ((-1)*LundPID.Pion.lundCode())){
+						
+						HadronPair pair=new HadronPair(part,part2,novel_fitter.getq(),novel_fitter.getL(),novel_fitter.Walt,novel_fitter.gNBoost);
+						double pMass=pair.getMass();
+						double pTheta=pair.getTheta();
+						double xF=pair.getXf();
+						double pPhiR=pair.getPhiR();
+						double pPhiH=pair.getPhiH();	
+						double pPt=pair.getPt();
+						System.out.printf("pair mass: %.2f pT: %.2f xF: %.2f, theta: %.2f, phiR: %.2f, phiH: %.2f\n", pMass,pPt,xF,pTheta,pPhiR,pPhiH);
+					}
+				}
+			}
+		}
 	}
 
 }
