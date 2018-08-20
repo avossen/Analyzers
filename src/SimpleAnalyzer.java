@@ -84,7 +84,7 @@ public class SimpleAnalyzer {
 	protected NovelBaseFitter novel_fitter;
 	protected NovelBaseFitter novel_fitterMC;
 	protected EventFilter filter;
-	protected boolean printDebug=true;
+	protected boolean printDebug=false;
 	AsymData m_asymData;
 	//ArrayList<EventData> m_eventData;
 	//ArrayList<EventData> m_mcEventData;
@@ -781,7 +781,7 @@ public class SimpleAnalyzer {
 	void printEventInfo(PhysicsEvent generic_Event)
 	{
 		double Q2=novel_fitter.getQ2();
-		double W=novel_fitter.getQ2();
+		double W=novel_fitter.getW();
 		double x=novel_fitter.getX();
 		double y=novel_fitter.getY();
 		
