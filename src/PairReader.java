@@ -41,14 +41,16 @@ public class PairReader {
 	protected H1F hXf;
 
 	protected H1F hM;
-
+	
+	protected H1F hAsymDistVsRun;
+	protected H1F hAsymDistVsRunG1P;
 	protected H2F phiRVsZResolution;
 	protected H2F MVsZResolution;
 	protected H2F hQ2VsX;
 
 	// is the halfway plate in
 	protected boolean hwpIn = false;
-	static boolean isMC = true;
+	static boolean isMC = false;
 	static int numPhiBins = 8;
 	// this is driven by the run numbers
 	static int maxKinBins = 32;
@@ -89,6 +91,8 @@ public class PairReader {
 		hWy = new H1F("Wy", "Wy", 100, -0.3, 1.2);
 		hZ = new H1F("Z", "Z", 100, 0, 1.0);
 		hM = new H1F("M", "M", 100, 0, 3.0);
+		hAsymDistVsRun=new H1F("asymDistVsRun","asymDistVsRun",20,-5,5);
+		hAsymDistVsRunG1P=new H1F("asymDistVsRunG1P","asymDistVsRunG1P",20,-5,5);
 		hXf = new H1F("xF", "xF", 100, -1.0, 1.0);
 		hPhiR = new H1F("phiR", "phiR", 100, 0, 2 * Math.PI);
 		hPhiH = new H1F("phiH", "phiH", 100, -2 * Math.PI, 2 * Math.PI);
@@ -190,6 +194,32 @@ public class PairReader {
 		canKin.getPad(5).getAxisX().setTitle("Wy");
 		canKin.draw(this.hWy);
 		canKin.save("diHadKins.png");
+		
+		//fit with gaussian
+		F1D fG = new F1D("fG","[amp]*gaus(x,[mean],[sigma])", -5.0, 5.0);
+		fG.setParameter(0, 5.0);
+		fG.setParameter(1, 0.0);
+		fG.setParameter(2, 1.0);
+		
+		DataFitter.fit(fG, this.hAsymDistVsRun, "Q");
+		EmbeddedCanvas canStability = new EmbeddedCanvas();
+		canStability.setSize(1200, 600);
+		canStability.divide(2, 1);
+		canStability.cd(0);
+		canStability.getPad(0).getAxisX().setTitle("normalized asymmetry");
+		canStability.draw(this.hAsymDistVsRun);
+		canStability.draw(fG,"same");
+		
+		System.out.println("Gaus fit to asyms mean: " + fG.parameter(1).value()+" +- "+ fG.parameter(1).error() + " sigma: " + fG.parameter(2).value()+" +- "+fG.parameter(2).error());
+		System.out.println("chi2/ndf: "+fG.getChiSquare()/fG.getNDF());
+		DataFitter.fit(fG, this.hAsymDistVsRunG1P, "Q");
+		canStability.cd(1);
+		canStability.getPad(0).getAxisX().setTitle("normalized asymmetry G1P");
+		canStability.draw(this.hAsymDistVsRunG1P);
+		canStability.draw(fG,"same");
+		System.out.println("Gaus fit to asyms G1P mean: " + fG.parameter(1).value()+" +- "+ fG.parameter(1).error() + " sigma: " + fG.parameter(2).value()+" +- "+fG.parameter(2).error());
+		System.out.println("chi2/ndf: "+fG.getChiSquare()/fG.getNDF());
+		canStability.save("asymStability.png");
 
 	}
 
@@ -480,6 +510,15 @@ public class PairReader {
 					}
 					vals[iKinBin] /= wyFactor;
 					valErrs[iKinBin] /= wyFactor;
+					if(binningType==Binning.RunBinning)
+					{
+						if(doG1P)
+							hAsymDistVsRunG1P.fill(vals[iKinBin]/valErrs[iKinBin]);
+						else
+							hAsymDistVsRun.fill(vals[iKinBin]/valErrs[iKinBin]);
+					}
+				
+					
 				} else {
 					System.out.println("no mean vals for " + s);
 				}
