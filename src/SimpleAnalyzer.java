@@ -100,8 +100,8 @@ public class SimpleAnalyzer {
 			System.exit(0);
 		}
 		SimpleAnalyzer analyzer = new SimpleAnalyzer();
-		analyzer.isMC=true;
-		//analyzer.isMC=false;
+		//analyzer.isMC=true;
+		analyzer.isMC=false;
 		analyzer.analyze(args);
 		analyzer.plot();
 	}
@@ -151,10 +151,10 @@ public class SimpleAnalyzer {
 	public void analyze(String[] args) {
 		reader= new HipoDataSource();
 		//for debugging, use eventbuilder
-		NovelBaseFitter.useStefanElectronCuts=false;
-		NovelBaseFitter.useStefanHadronCuts=false;
+		NovelBaseFitter.useStefanElectronCuts=true;
+		NovelBaseFitter.useStefanHadronCuts=true;
 		//for haruts mc
-		NovelBaseFitter.useTimeBasedTracks=true;
+		NovelBaseFitter.useTimeBasedTracks=false;
 		
 		
 		m_numGoodFilterEvts=0;
