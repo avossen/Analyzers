@@ -153,6 +153,10 @@ public class SimpleAnalyzer {
 		//for debugging, use eventbuilder
 		NovelBaseFitter.useStefanElectronCuts=false;
 		NovelBaseFitter.useStefanHadronCuts=false;
+		//for haruts mc
+		NovelBaseFitter.useTimeBasedTracks=true;
+		
+		
 		m_numGoodFilterEvts=0;
 		m_numEvtsWithPIDChi2=0;
 		m_numEvtsWithKinCuts=0;
@@ -315,7 +319,16 @@ public class SimpleAnalyzer {
 					currentEvent.Q2=(float)novel_fitter.getQ2();
 					currentEvent.W=(float)novel_fitter.getW();
 					currentEvent.x=(float)novel_fitter.getX();
-					currentEvent.beamHelicity=novel_fitter.getBeamHelicity();
+					//need to get helicity, run and event number from MC event
+					//because they are not stored in REC::Event record
+					if(this.isMC)
+					{
+						currentEvent.beamHelicity=this.novel_fitterMC.getBeamHelicity();
+					}
+					else
+					{
+						currentEvent.beamHelicity=novel_fitter.getBeamHelicity();
+					}
 					this.currentMCEvent=new EventData();
 					currentMCEvent.beamHelicity=0;
 					doDiHadrons(generic_Event,generic_EventMC,novel_fitter,novel_fitterMC);
