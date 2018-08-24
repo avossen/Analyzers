@@ -100,8 +100,8 @@ public class SimpleAnalyzer {
 			System.exit(0);
 		}
 		SimpleAnalyzer analyzer = new SimpleAnalyzer();
-		//analyzer.isMC=true;
-		analyzer.isMC=false;
+		analyzer.isMC=true;
+		//analyzer.isMC=false;
 		analyzer.analyze(args);
 		analyzer.plot();
 	}
