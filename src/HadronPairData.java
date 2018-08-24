@@ -13,6 +13,13 @@ public class HadronPairData implements Serializable {
 	public boolean hasMC;
 	public float pTLab;
 	public float pTBreit;
+	public float theta1;
+	public float theta2;
+	public float phi1;
+	public float phi2;
+	public float mom1;
+	public float mom2;
+	
 	HadronPairData matchingMCPair;
 	
 	

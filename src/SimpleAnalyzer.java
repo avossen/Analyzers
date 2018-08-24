@@ -119,6 +119,13 @@ public class SimpleAnalyzer {
 		data.z=(float)pair.getZ();
 		data.hasMC=false;
 		data.theta=(float)pair.getTheta();
+		data.theta1=(float)pair.getTheta1();
+		data.theta2=(float)pair.getTheta2();
+		data.phi1=(float)pair.getPhi1();
+		data.phi2=(float)pair.getPhi2();
+		data.mom1=(float)pair.getMom1();
+		data.mom2=(float)pair.getMom1();
+		
 		
 	//	System.out.println("saving, isMC?: " + isMC);
 		

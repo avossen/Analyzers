@@ -150,9 +150,9 @@ public class HadronPair {
 		//so vecR is now in the Breit frame
 		Vector3 vecR = new Vector3(vh1.vect());
 		//scale by 1/z1
-		vecR.setMagThetaPhi(vh1.vect().mag()/z1, vh1.vect().theta(),vh2.vect().phi());
+		vecR.setMagThetaPhi(vh1.vect().mag()/z1, vh1.vect().theta(),vh1.vect().phi());
 		Vector3 scaledVh2=new Vector3();
-		scaledVh2.setMagThetaPhi(vh2.vect().mag()/z2, vh2.vect().theta(), vh2.vect().theta());
+		scaledVh2.setMagThetaPhi(vh2.vect().mag()/z2, vh2.vect().theta(), vh2.vect().phi());
 		vecR.sub(scaledVh2);
 		//get vecRT:
 		Vector3 vecRt=new Vector3();
@@ -217,5 +217,29 @@ public class HadronPair {
 		//System.out.println("Old phiR: " + phi_R+ " new phiR: " + phi_R2);
 	//	System.out.println("old sign " + sinPhiR + " new sign: "+ (vecQUnit.cross(vecL)).dot(vecRt)/Math.abs((vecQUnit.cross(vecL)).dot(vecRt)));
 		// boostedPair.vect().phi();
+	}
+	double getTheta1()
+	{
+		return m_h1.theta();
+	}
+	double getTheta2()
+	{
+		return m_h2.theta();
+	}
+	double getPhi1()
+	{
+		return m_h1.phi();
+	}
+	double getPhi2()
+	{
+		return m_h2.phi();
+	}
+	double getMom1()
+	{
+		return m_h1.p();
+	}
+	double getMom2()
+	{
+		return m_h2.p();
 	}
 }
