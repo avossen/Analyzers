@@ -19,6 +19,7 @@ import org.jlab.io.base.DataEvent;
 import org.jlab.groot.fitter.ParallelSliceFitter;
 import org.jlab.groot.graphics.EmbeddedCanvas;
 import org.jlab.groot.math.F1D;
+
 import org.jlab.groot.data.GraphErrors;
 
 import org.jlab.groot.data.H1F;
@@ -51,19 +52,44 @@ public class PairReader {
 	// is the halfway plate in
 	protected boolean hwpIn = false;
 	static boolean isMC = false;
-	static int numPhiBins = 8;
+	static int numPhiBins = 16;
+	static int numPhiBins2D = 8;
 	// this is driven by the run numbers
 	static int maxKinBins = 32;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
 	protected float[][][][] counts;
 	protected float[][][][] countsG1P;
+	
+	protected float[][][][][] counts_2D;
+	protected float[][][][][] countsG1P_2D;
+	
 	protected float[][] meanKin;
+	//to calculate multiplicity per event
+	protected double[] numEvts;
+	//to compute kin variables vs run number (and maybe others)
+	protected double[][] meanQ2;
+	protected double[][] meanPt;
+	protected double[][] meanM;
+	protected double[][] meanHadMom1;
+	protected double[][] meanHadMom2;
+	protected double[][] meanHadPhi1;
+	protected double[][] meanHadPhi2;
+	protected double[][] meanHadTheta1;
+	protected double[][] meanHadTheta2;
+	protected double[] meanHadPairMult;
+	
+	
+	
 	protected float[][] meanWy;
 	protected float[][][] kinCount;
+	
+	
+	
 
 	protected ArrayList<Double> phiBins;
-
+	protected ArrayList<Double> phiBins2D;
+	
 	public static void main(String[] args) {
 		GStyle.getGraphErrorsAttributes().setMarkerStyle(0);
 		GStyle.getGraphErrorsAttributes().setMarkerColor(3);
@@ -100,10 +126,27 @@ public class PairReader {
 		phiRVsZResolution = new H2F("phiRVsZResolution", "phiRVsZResolution", 20, 0.0, 1.0, 20, -1.0, 1.0);
 		hQ2VsX = new H2F("Q2VsX", "Q2VsX", 20, 0.0, 1.0, 20, 0.0, 12);
 		phiBins = new ArrayList<Double>();
+		phiBins2D = new ArrayList<Double>();
 		counts = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
 		countsG1P = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
 
+		counts_2D = new float[Binning.numKinBins][2][maxKinBins][numPhiBins2D][numPhiBins2D];
+		countsG1P_2D = new float[Binning.numKinBins][2][maxKinBins][numPhiBins2D][numPhiBins2D];
+		
 		meanKin = new float[Binning.numKinBins][maxKinBins];
+		meanQ2 = new double[Binning.numKinBins][maxKinBins];
+		meanHadPairMult = new double[maxKinBins];
+		numEvts = new double[maxKinBins];
+		meanHadMom1 = new double[Binning.numKinBins][maxKinBins];
+		meanHadMom2 = new double[Binning.numKinBins][maxKinBins];
+		meanHadTheta1 = new double[Binning.numKinBins][maxKinBins];
+		meanHadTheta2 = new double[Binning.numKinBins][maxKinBins];
+		meanHadPhi1 = new double[Binning.numKinBins][maxKinBins];
+		meanHadPhi2 = new double[Binning.numKinBins][maxKinBins];
+		meanPt = new double[Binning.numKinBins][maxKinBins];
+		meanM = new double[Binning.numKinBins][maxKinBins];
+		
+		
 		meanWy = new float[Binning.numKinBins][maxKinBins];
 		// also needed for relative luminosity
 		kinCount = new float[Binning.numKinBins][2][maxKinBins];
@@ -116,6 +159,10 @@ public class PairReader {
 		for (int i = 0; i < numPhiBins; i++) {
 			System.out.println("adding phi bin " + ((i + 1) * 2 * Math.PI / numPhiBins));
 			phiBins.add(((i + 1) * 2 * Math.PI / numPhiBins));
+		}
+		for (int i = 0; i < numPhiBins2D; i++) {
+			System.out.println("adding phi bin " + ((i + 1) * 2 * Math.PI / numPhiBins2D));
+			phiBins2D.add(((i + 1) * 2 * Math.PI / numPhiBins2D));
 		}
 
 	}
@@ -298,7 +345,7 @@ public class PairReader {
 								// rndSpin=Math.random()*2.0-1.0;
 
 							}
-							System.out.println("beam hlicity: " + evtData.beamHelicity);
+							//System.out.println("beam hlicity: " + evtData.beamHelicity);
 							int helicityIndex = 0;
 							if (evtData.beamHelicity > 0) {
 								helicityIndex = 1;
@@ -336,14 +383,26 @@ public class PairReader {
 
 							hY.fill(evtData.y);
 							hWy.fill(Wy);
+							double nu=evtData.y*10.6;
+							int runBin = Binning.RunBinning.getBin(0.0, 0.0, evtData.x, runNumber);
+							meanHadPairMult[runBin]+=evtData.pairData.size();
+							numEvts[runBin]+=1;
 							for (HadronPairData pairData : evtData.pairData) {
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
 								hM.fill(pairData.M);
 								// System.out.println("helicity: " + evtData.beamHelicity);
-								if (pairData.z < 0.1 || pairData.xF < 0)
+								if (pairData.z < 0.2 || pairData.xF < 0)
 									continue;
-
+								
+								double eh1=Math.sqrt(pairData.mom1*pairData.mom1+0.14*0.14);
+								double eh2=Math.sqrt(pairData.mom2*pairData.mom2+0.14*0.14);
+								double z1=eh1/nu;
+								double z2=eh2/nu;
+								if(z1<0.1 || z2<0.1)
+									continue;
+						//		if(pairData.M<0.7)
+						//			continue;
 								hPhiR.fill(pairData.phiR);
 								double weight = 1.0;
 
@@ -351,7 +410,9 @@ public class PairReader {
 									weight = getWeight(pairData.matchingMCPair, rndSpin);
 								}
 								int phiBin = Binning.getBin(phiBins, pairData.phiR);
+								int phiBin2D = Binning.getBin(phiBins2D, pairData.phiR);
 								int phiBinG1P = Binning.getBin(phiBins, pairData.phiH - pairData.phiR);
+								int phiHBin2D= Binning.getBin(phiBins2D, pairData.phiH);
 								// System.out.println("phiR: "+pairData.phiR+ " bin: "+ phiBin);
 								for (Binning binningType : EnumSet.allOf(Binning.class)) {
 									int iBin = binningType.getBin(pairData.M, pairData.z, evtData.x, runNumber);
@@ -373,8 +434,27 @@ public class PairReader {
 									counts[binningType.binType][helicityIndex][iBin][phiBin] += weight;
 									countsG1P[binningType.binType][helicityIndex][iBin][phiBinG1P] += weight
 											* pairData.pTBreit / pairData.M;
+									
+									counts_2D[binningType.binType][helicityIndex][iBin][phiBin2D][phiHBin2D] += weight;
+									countsG1P_2D[binningType.binType][helicityIndex][iBin][phiBin2D][phiHBin2D] += weight* pairData.pTBreit / pairData.M;
+									
 									kinCount[binningType.binType][helicityIndex][iBin] += weight;
 									meanWy[binningType.binType][iBin] += Wy * weight;
+									meanQ2[binningType.binType][iBin] += evtData.Q2 * weight;
+									meanPt[binningType.binType][iBin] += pairData.pTBreit * weight;
+									meanM[binningType.binType][iBin] += pairData.M * weight;
+									meanHadPhi1[binningType.binType][iBin]+= pairData.phi1 * weight;
+									meanHadPhi2[binningType.binType][iBin]+= pairData.phi2 * weight;
+									
+									meanHadTheta1[binningType.binType][iBin]+= pairData.theta1 * weight;
+									meanHadTheta2[binningType.binType][iBin]+= pairData.theta2 * weight;
+									
+									meanHadMom1[binningType.binType][iBin]+= pairData.mom1 * weight;
+									meanHadMom2[binningType.binType][iBin]+= pairData.mom2 * weight;
+									
+									
+									
+									
 									if (binningType == Binning.MBinning) {
 										meanKin[binningType.binType][iBin] += pairData.M * weight;
 
@@ -434,6 +514,15 @@ public class PairReader {
 				+ pairsWithMatch / (float) (pairsWithMatch + pairsWOMatch));
 	}
 
+	
+	void doFits2D(boolean doG1P)
+	{
+		
+
+		
+	}
+	
+	
 	void doFits(boolean doG1P) {
 		float loc_counts[][][][];
 		if (doG1P)
@@ -498,12 +587,27 @@ public class PairReader {
 
 				if ((kinCount[binningType.getBinType()][0][iKinBin]
 						+ kinCount[binningType.getBinType()][1][iKinBin]) > 0) {
+					double normCount=(kinCount[binningType.getBinType()][0][iKinBin]
+							+ kinCount[binningType.getBinType()][1][iKinBin]);
 					xVals[iKinBin] = this.meanKin[binningType.binType][iKinBin]
-							/ (kinCount[binningType.getBinType()][0][iKinBin]
-									+ kinCount[binningType.getBinType()][1][iKinBin]);
+							/ normCount;
 					double wyFactor = this.meanWy[binningType.binType][iKinBin]
-							/ (kinCount[binningType.getBinType()][0][iKinBin]
-									+ kinCount[binningType.getBinType()][1][iKinBin]);
+							/ normCount;
+					this.meanHadMom1[binningType.getBinType()][iKinBin]=this.meanHadMom1[binningType.getBinType()][iKinBin]/normCount;
+					this.meanHadMom2[binningType.getBinType()][iKinBin]=this.meanHadMom2[binningType.getBinType()][iKinBin]/normCount;
+					this.meanHadTheta1[binningType.getBinType()][iKinBin]=this.meanHadTheta1[binningType.getBinType()][iKinBin]/normCount;
+					this.meanHadTheta2[binningType.getBinType()][iKinBin]=this.meanHadTheta2[binningType.getBinType()][iKinBin]/normCount;
+					this.meanHadPhi1[binningType.getBinType()][iKinBin]=this.meanHadPhi1[binningType.getBinType()][iKinBin]/normCount;
+					this.meanHadPhi2[binningType.getBinType()][iKinBin]=this.meanHadPhi2[binningType.getBinType()][iKinBin]/normCount;
+					this.meanQ2[binningType.getBinType()][iKinBin]=this.meanQ2[binningType.getBinType()][iKinBin]/normCount;
+					this.meanPt[binningType.getBinType()][iKinBin]=this.meanPt[binningType.getBinType()][iKinBin]/normCount;
+					this.meanM[binningType.getBinType()][iKinBin]=this.meanM[binningType.getBinType()][iKinBin]/normCount;
+					if(binningType==Binning.RunBinning)
+					{
+						this.meanHadPairMult[iKinBin]=this.meanHadPairMult[iKinBin]/numEvts[iKinBin];
+					}
+					
+					
 					if (doG1P) {
 						// should be this A'/C' factor, but couldn't find definition
 						wyFactor = 1.0;
@@ -530,6 +634,37 @@ public class PairReader {
 
 			String title = "Asyms_" + baseTitle + binningType.getBinningName();
 			saveKinGraph(xVals, xErrVals, vals, valErrs, title);
+			title ="MeanHadMom1_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanHadMom1[binningType.getBinType()], xErrVals, title);
+			
+			title ="MeanHadMom2_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanHadMom2[binningType.getBinType()], xErrVals, title);
+			
+			title ="MeanHadTheta1_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanHadTheta1[binningType.getBinType()], xErrVals, title);
+			
+			title ="MeanHadTheta2_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanHadTheta2[binningType.getBinType()], xErrVals, title);
+			
+			title ="MeanHadPhi1_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanHadPhi1[binningType.getBinType()], xErrVals, title);
+			
+			title ="MeanHadPhi2_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanHadPhi2[binningType.getBinType()], xErrVals, title);
+			title ="MeanQ2_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanQ2[binningType.getBinType()], xErrVals, title);
+			title ="MeanPt_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanPt[binningType.getBinType()], xErrVals, title);
+			
+			title ="MeanM_" + baseTitle + binningType.getBinningName();
+			saveKinGraph(xVals, xErrVals, meanM[binningType.getBinType()], xErrVals, title);
+			if(binningType==Binning.RunBinning)
+			{
+				title ="MeanMult_" + baseTitle + binningType.getBinningName();
+				saveKinGraph(xVals, xErrVals, meanHadPairMult, xErrVals, title);
+			}
+				
+			
 		}
 
 		// fitHisto.setBinContent(bin, value);
