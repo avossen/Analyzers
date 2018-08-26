@@ -151,10 +151,10 @@ public class SimpleAnalyzer {
 	public void analyze(String[] args) {
 		reader= new HipoDataSource();
 		//for debugging, use eventbuilder
-		NovelBaseFitter.useStefanElectronCuts=true;
-		NovelBaseFitter.useStefanHadronCuts=true;
+		NovelBaseFitter.useStefanElectronCuts=false;
+		NovelBaseFitter.useStefanHadronCuts=false;
 		//for haruts mc
-		NovelBaseFitter.useTimeBasedTracks=false;
+		NovelBaseFitter.useTimeBasedTracks=true;
 		
 		
 		m_numGoodFilterEvts=0;
