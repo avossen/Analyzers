@@ -61,7 +61,7 @@ RunBinning(3);
 			bins.add(4039.0);
 			bins.add(4041.0);
 			bins.add(4044.0);
-			//bins.add(4050.0);
+			bins.add(4050.0);
 			bins.add(4053.0);
 			bins.add(4067.0);
 			bins.add(4069.0);
@@ -71,7 +71,7 @@ RunBinning(3);
 			bins.add(4303.0);
 			bins.add(4304.0);
 			bins.add(4305.0);
-		//	bins.add(4306.0);
+			bins.add(4306.0);
 			bins.add(4307.0);
 			bins.add(4308.0);
 		}
