@@ -432,20 +432,20 @@ public class PairReader {
 						for (EventData evtData : m_asymData.eventData) {
 							// helicity has to be fixed per event
 							double rndSpin = 0.0;
+							
 							if (isMC) {
 								// even MC has helicity-->only the stuff from Hrayr, the other one not,
 								// so for now now need to set from random
 								rndSpin = Math.random() * 2.0 - 1.0;
-
 							}
 							// System.out.println("beam hlicity: " + evtData.beamHelicity);
 							int helicityIndex = 0;
-							if (!isMC) {
+							if (!isMC)
+							{
 								if (evtData.beamHelicity > 0) {
 									helicityIndex = 1;
 									rndSpin = 1.0;
 								} else {
-
 									rndSpin = -1.0;
 								}
 							}
@@ -647,6 +647,8 @@ public class PairReader {
 			}
 		}
 		// ran over all files, now fit
+		dump2DToFile(false);
+		dump2DToFile(true);
 		doFits(false);
 		doFits(true);
 		System.out.println("pairs with match " + pairsWithMatch + " pairs without: " + pairsWOMatch + " percentage: "
@@ -657,6 +659,7 @@ public class PairReader {
 	void dump2DToFile(boolean isG1P)
 	{
 		String filename;
+		Writer writer=null;
 		float loc_counts[][][][][];
 //		// g1p counts are weighted
 		if (isG1P)
@@ -674,17 +677,42 @@ public class PairReader {
 		}
 		try 
 		{
-			Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 
+			writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 
+			
+			
 			for (Binning binningType : EnumSet.allOf(Binning.class)) {
+				writer.write(binningType.getBinningName()+" "+Integer.toString(binningType.getNumBins())+" "+Integer.toString(numPhiBins)+" ");
+				//dump mean values for each kin bin
 				for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
+					double normCount=(kinCount[binningType.getBinType()][0][iKinBin]
+						+ kinCount[binningType.getBinType()][1][iKinBin]);
+					double xVal = this.meanKin[binningType.binType][iKinBin]/normCount;	
+					writer.write(Float.toString((float)xVal)+" ");
+				}
+				writer.write("\n");
+				for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
+					float r=0;
+					if (kinCount[binningType.getBinType()][1][iKinBin] > 0) {
+						r = kinCount[binningType.getBinType()][0][iKinBin]
+								/ kinCount[binningType.getBinType()][1][iKinBin];
+					} else {
+						System.out.println("dumpfile no counts (r) for kin bin " + iKinBin);
+					}
+					writer.write(Float.toString(r)+" ");
 					for (int iAngBin = 0; iAngBin < numPhiBins; iAngBin++) {
-						for (int iAngBin2 = 0; iAngBin2 < numPhiBins; iAngBin2++) {
+						for (int iAngBin2 = 0; iAngBin2 < numPhiBins; iAngBin2++) {	
+							for(int ipol=0;ipol<2;ipol++)
+							{
+								writer.write(Float.toString(loc_counts[binningType.getBinType()][ipol][iKinBin][iAngBin][iAngBin2]));
+								writer.write(" ");
+							}
 	
 						}
 					}
 				}
+				writer.write("\n");
 			}
-			writer.write("something");
+
 		}
 			catch(IOException ex)
 			{
@@ -773,9 +801,7 @@ public class PairReader {
 //		}
 	}
 
-	void doFits(boolean doG1P) {
-		
-		
+	void doFits(boolean doG1P) {		
 		float loc_counts[][][][];
 		if (doG1P)
 			loc_counts = countsG1P;
@@ -831,7 +857,7 @@ public class PairReader {
 					// DataFitter fitter;
 					x = (iAngBin + 0.5) * 2 * Math.PI / numPhiBins;
 					// derivative with respect to N1 is 2*r*N2/(N1+N2)^2
-
+					System.out.println("add point x: "+ x + " y: "+ y + " ex: "+ ex + " ey: "+ ey);
 					g.addPoint(x, y, ex, ey);
 				}
 				DataFitter.fit(f1, g, "Q");
