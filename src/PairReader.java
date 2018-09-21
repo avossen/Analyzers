@@ -58,8 +58,11 @@ public class PairReader {
 
 	// is the halfway plate in
 	protected boolean hwpIn = false;
-	static boolean isMC = true;
-	// static boolean isMC = false;
+	static boolean isMC = false;
+	
+	// static boolean isMC = true;
+	//static boolean isHrayr = true;
+	static boolean isHrayr = false;
 	static int numPhiBins = 8;
 	static int numPhiBins2D = 8;
 	// this is driven by the run numbers
@@ -436,17 +439,26 @@ public class PairReader {
 							if (isMC) {
 								// even MC has helicity-->only the stuff from Hrayr, the other one not,
 								// so for now now need to set from random
-								rndSpin = Math.random() * 2.0 - 1.0;
+								
+									rndSpin = Math.random() * 2.0 - 1.0;
 							}
-							// System.out.println("beam hlicity: " + evtData.beamHelicity);
+						
+							//System.out.println("beam hlicity: " + evtData.beamHelicity);
 							int helicityIndex = 0;
-							if (!isMC)
+							if (!isMC || isHrayr)
 							{
+//System.out.println("beam helicity: " + evtData.beamHelicity);
 								if (evtData.beamHelicity > 0) {
 									helicityIndex = 1;
-									rndSpin = 1.0;
+									if(!isHrayr)
+									{
+										rndSpin = 1.0;
+									}
 								} else {
-									rndSpin = -1.0;
+									if(!isHrayr)
+									{
+										rndSpin = -1.0;
+									}
 								}
 							}
 							if (isMC && runNumber == 0) {
@@ -459,13 +471,14 @@ public class PairReader {
 								}
 
 							}
-							if (isMC) {
+						//	System.out.println("looking at run number: " + runNumber);
+							if (isMC && !isHrayr) {
 								if (rndSpin < 0) {
 									helicityIndex = 1;
 								} else {
 									helicityIndex = 0;
 								}
-								System.out.println("helicity: " + helicityIndex);
+								
 							}
 							// flip helicities
 							if (hwpIn) {
@@ -478,6 +491,7 @@ public class PairReader {
 									rndSpin = 1.0;
 								}
 							}
+							//System.out.println("helicity: " + helicityIndex);
 							hQ2VsX.fill(evtData.x, evtData.Q2);
 							// kinematic factor W(y) (asymmetry is ~W(y) x e(x)
 							double Wy = 0;
@@ -501,14 +515,14 @@ public class PairReader {
 								phi1.fill(pairData.phi1);
 								phi2.fill(pairData.phi2);
 								if (pairData.theta1 < 0.16 || pairData.theta2 < 0.16) {
-									continue;
+								//	continue;
 								}
 								// acceptance of forward detector
 								if (pairData.theta1 > 0.52 || pairData.theta2 > 0.52) {
-									continue;
+								//	continue;
 								}
 								if (pairData.mom1 < 0.5 || pairData.mom2 < 0.5) {
-									continue;
+								//	continue;
 								}
 
 								hXf.fill(pairData.xF);
@@ -516,14 +530,18 @@ public class PairReader {
 								hM.fill(pairData.M);
 								// System.out.println("helicity: " + evtData.beamHelicity);
 								if (pairData.z < 0.2 || pairData.xF < 0)
-									continue;
+								{
+								//	continue;
+								}
 
 								double eh1 = Math.sqrt(pairData.mom1 * pairData.mom1 + 0.14 * 0.14);
 								double eh2 = Math.sqrt(pairData.mom2 * pairData.mom2 + 0.14 * 0.14);
 								double z1 = eh1 / nu;
 								double z2 = eh2 / nu;
 								if (z1 < 0.1 || z2 < 0.1)
-									continue;
+								{
+								//	continue;
+								}
 								// if(pairData.M<0.7)
 								// continue;
 
@@ -688,6 +706,9 @@ public class PairReader {
 						+ kinCount[binningType.getBinType()][1][iKinBin]);
 					double xVal = this.meanKin[binningType.binType][iKinBin]/normCount;	
 					writer.write(Float.toString((float)xVal)+" ");
+					double wyFactor = this.meanWy[binningType.binType][iKinBin]
+							/ normCount;
+					writer.write(Float.toString((float)wyFactor)+" ");
 				}
 				writer.write("\n");
 				for (int iKinBin = 0; iKinBin < binningType.getNumBins(); iKinBin++) {
