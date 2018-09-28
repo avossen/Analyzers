@@ -6,7 +6,12 @@ public class EventData implements Serializable {
 	{
 		pairData=new ArrayList<HadronPairData>();	
 	}
-	
+	//the event and run number were not there before and probably break the schema
+	//might be able to read old file if removed
+	public int eventNr;
+	public int runNr;
+	public float torus;
+	public float solenoid;
 	public boolean hasMC;
 	public float Q2;
 	public float W;

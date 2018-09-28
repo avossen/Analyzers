@@ -67,6 +67,7 @@ public class PairReader {
 	static int numPhiBins2D = 8;
 	// this is driven by the run numbers
 	static int maxKinBins = 40;
+	int numPairs=0;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
 	protected float[][][][] counts;
@@ -374,14 +375,28 @@ public class PairReader {
 
 				Path filename = Paths.get(listOfFiles[iF].getName());
 				if (matcher.matches(filename)) {
+					//System.out.println("looing at " + filename);
 					// Deserialization
 					// check run number from filename, so we can determine halfway plate
 					// position
 					// is also in the dst's but not in my srn files (yet)
 					int runNumber = 0;
+					boolean foundRunNumber=false;
 					StringTokenizer st = new StringTokenizer(listOfFiles[iF].getName(), "_");
 					for (int i = 0; st.hasMoreTokens(); i++) {
+						//let's see if the run number is the first thing like in the
+						//new skim files	
 						String t1 = st.nextToken();
+						try
+						{
+							runNumber = Integer.parseInt(t1);		
+							if(runNumber>999 && runNumber<10000)
+								break;
+						}
+						catch(NumberFormatException ex)
+						{
+							runNumber=0;
+						}
 						// System.out.println("token " + i + ": "+ t1);
 						if (t1.contentEquals("out")) {
 							// System.out.println("passed first check");
@@ -398,7 +413,7 @@ public class PairReader {
 							}
 						}
 					}
-					// System.out.println("looking at run: " + runNumber);
+					//System.out.println("looking at run: " + runNumber);
 					if (!isMC) {
 						try {
 							hwpIn = getHWPInfo(runNumber);
@@ -431,7 +446,7 @@ public class PairReader {
 						}
 						// Method for deserialization of object
 						m_asymData = (AsymData) in.readObject();
-						System.out.println("got " + m_asymData.eventData.size() + " hadron pairs");
+						System.out.println("got " + m_asymData.eventData.size() + " events");
 						for (EventData evtData : m_asymData.eventData) {
 							// helicity has to be fixed per event
 							double rndSpin = 0.0;
@@ -508,22 +523,33 @@ public class PairReader {
 							numEvts[runBin] += 1;
 
 							numGoodEvents++;
+							if(evtData.pairData.size()>=1)
+							{
+								System.out.print("event nr " + evtData.eventNr+ " runnr "+evtData.runNr);
+								System.out.println(" Q2 " + evtData.Q2+ " y "+evtData.y +" x "+evtData.x);
+							}
 							for (HadronPairData pairData : evtData.pairData) {
 								theta1.fill(pairData.theta1);
 								theta2.fill(pairData.theta2);
 
 								phi1.fill(pairData.phi1);
 								phi2.fill(pairData.phi2);
-								if (pairData.theta1 < 0.16 || pairData.theta2 < 0.16) {
-								//	continue;
+								if (pairData.theta1 < 0.17 || pairData.theta2 < 0.17) {
+									//continue;
 								}
 								// acceptance of forward detector
 								if (pairData.theta1 > 0.52 || pairData.theta2 > 0.52) {
-								//	continue;
+									//continue;
 								}
-								if (pairData.mom1 < 0.5 || pairData.mom2 < 0.5) {
-								//	continue;
+								
+								float E1=sqrt(pairData.mom1*pairData.mom1+0.14*0.14);
+								float E2=sqrt(pairData.mom2*pairData.mom2+0.14*0.14);
+								if (pairData.mom1 < 1.0 || pairData.mom2 < 1.0) {
+									continue;
 								}
+								
+								
+								
 
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
@@ -531,7 +557,7 @@ public class PairReader {
 								// System.out.println("helicity: " + evtData.beamHelicity);
 								if (pairData.z < 0.2 || pairData.xF < 0)
 								{
-								//	continue;
+									continue;
 								}
 
 								double eh1 = Math.sqrt(pairData.mom1 * pairData.mom1 + 0.14 * 0.14);
@@ -540,11 +566,17 @@ public class PairReader {
 								double z2 = eh2 / nu;
 								if (z1 < 0.1 || z2 < 0.1)
 								{
-								//	continue;
+									continue;
 								}
+								///Debug print
+								System.out.print("z1: " + z1 + " z2 "+z2);
+								System.out.println(" pion1 mom: "+ pairData.mom1+" pion2 mom: " +pairData.mom2);
+									System.out.println("\n");
+						
+								///--->end
 								// if(pairData.M<0.7)
 								// continue;
-
+								numPairs++;
 								double weight = 1.0;
 
 								if (pairData.hasMC) {
@@ -669,8 +701,9 @@ public class PairReader {
 		dump2DToFile(true);
 		doFits(false);
 		doFits(true);
-		System.out.println("pairs with match " + pairsWithMatch + " pairs without: " + pairsWOMatch + " percentage: "
+		System.out.println("Pairs with match " + pairsWithMatch + " pairs without: " + pairsWOMatch + " percentage: "
 				+ pairsWithMatch / (float) (pairsWithMatch + pairsWOMatch));
+		System.out.println("num pairs: "+numPairs);
 	}
 
 	

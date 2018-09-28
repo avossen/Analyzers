@@ -124,7 +124,7 @@ public class SimpleAnalyzer {
 		data.phi1=(float)pair.getPhi1();
 		data.phi2=(float)pair.getPhi2();
 		data.mom1=(float)pair.getMom1();
-		data.mom2=(float)pair.getMom1();
+		data.mom2=(float)pair.getMom2();
 		
 		
 	//	System.out.println("saving, isMC?: " + isMC);
@@ -151,10 +151,11 @@ public class SimpleAnalyzer {
 	public void analyze(String[] args) {
 		reader= new HipoDataSource();
 		//for debugging, use eventbuilder
-		NovelBaseFitter.useStefanElectronCuts=false;
+		NovelBaseFitter.useStefanElectronCuts=true;
 		NovelBaseFitter.useStefanHadronCuts=false;
+		NovelBaseFitter.useStefanPIDCuts=false;
 		//for haruts mc
-		NovelBaseFitter.useTimeBasedTracks=true;
+		NovelBaseFitter.useTimeBasedTracks=false;
 		
 		
 		m_numGoodFilterEvts=0;
@@ -290,7 +291,7 @@ public class SimpleAnalyzer {
 					   printEventInfo(generic_Event);
 						
 					}
-					
+					//System.out.println("new valid event!!");
 					
 					
 					hQ2.fill(novel_fitter.getQ2());
@@ -299,8 +300,11 @@ public class SimpleAnalyzer {
 					hQvsX.fill(novel_fitter.getX(), novel_fitter.getQ2());
 					m_numGoodFilterEvts++;
 					//System.out.println("Q2: " + novel_fitter.getQ2() + " w: " + novel_fitter.Walt);
-					if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.0)
+					if (novel_fitter.getQ2() < 1.0 || novel_fitter.Walt < 2.0 )
 						continue;
+					if(novel_fitter.getY()>0.8)
+						continue;
+					
 					
 					// grab electron
 				//	System.out.println("q2 w good");
@@ -314,7 +318,11 @@ public class SimpleAnalyzer {
 					}
 					this.evtFulfillsMissingMass=false; 
 					this.currentEvent=new EventData();
+					currentEvent.eventNr=novel_fitter.getEvtNumber();
+					currentEvent.runNr=novel_fitter.getRunNumber();
 					currentEvent.y=(float)novel_fitter.getY();
+					currentEvent.torus=(float)novel_fitter.getTorus();
+					currentEvent.solenoid=(float)novel_fitter.getSolenoid();
 					//System.out.println("y: " + novel_fitter.getY() + " q2 "+ novel_fitter.getQ2());
 					currentEvent.Q2=(float)novel_fitter.getQ2();
 					currentEvent.W=(float)novel_fitter.getW();
@@ -473,9 +481,7 @@ public class SimpleAnalyzer {
 	
 	void doDiHadrons(PhysicsEvent generic_Event, PhysicsEvent generic_EventMC, NovelBaseFitter m_novel_fitter, NovelBaseFitter m_novel_fitterMC) {
 		//System.out.println("in do dihad with "+generic_Event.count() + "particles ");
-		for (int i = 0; i < generic_Event.count(); i++) 
-		
-		
+		for (int i = 0; i < generic_Event.count(); i++) 	
 		{
 			MyParticle part = (MyParticle) generic_Event.getParticle(i);
 			int sec= part.FTOFsector;
@@ -503,13 +509,13 @@ public class SimpleAnalyzer {
 
 			
 			
-			if (part.pid() == LundPID.Pion.lundCode() || part.pid()==LundPID.Kaon.lundCode()) {
-				
+			if (part.pid() == LundPID.Pion.lundCode())// || part.pid()==LundPID.Kaon.lundCode()) {
+			{
 				for (int j = 0; j < generic_Event.count(); j++) {
 					MyParticle part2 = (MyParticle) generic_Event.getParticle(j);
 					// Systefm.out.println("lookign at pid " + part2.pid());
-					if (part2.pid() == ((-1)*LundPID.Pion.lundCode()) || part2.pid()==((-1)*LundPID.Kaon.lundCode())){
-						
+					if (part2.pid() == ((-1)*LundPID.Pion.lundCode()) )//|| part2.pid()==((-1)*LundPID.Kaon.lundCode())){
+					{
 						if(!this.m_EvtCountedKinCuts)
 						{
 							this.m_numEvtsWithKinCuts++;
@@ -519,8 +525,6 @@ public class SimpleAnalyzer {
 						
 						HadronPair pair=new HadronPair(part,part2,m_novel_fitter.getq(),m_novel_fitter.getL(),m_novel_fitter.Walt,m_novel_fitter.gNBoost);
 
-							
-						
 						hDiPionMass2.fill(pair.getMass());
 						 hDiPionTheta2.fill(pair.getTheta());
 						 hDiPionPPerp2.fill(pair.getPt());
@@ -530,7 +534,7 @@ public class SimpleAnalyzer {
 						 hZ.fill(pair.getZ());
 						 hDiPionMissingMass.fill(pair.getMissingMass());
 						 
-						if(pair.getMissingMass()>1.05 && pair.getZ()<0.95)
+						if(pair.getMissingMass()>1.05 && pair.getZ()<0.95 )
 						{
 							evtFulfillsMissingMass=true;
 							if(part.m_chi2pid<=5.0 && part2.m_chi2pid<=5.0)
@@ -546,8 +550,7 @@ public class SimpleAnalyzer {
 						{
 							continue;
 						}
-					
-						
+											
 						LorentzVector pionPair = new LorentzVector(part.px() + part2.px(), part.py() + part2.py(),
 								part.pz() + part2.pz(), part.e() + part2.e());
 						hDiPionMass.fill(pionPair.mass());
@@ -785,7 +788,7 @@ public class SimpleAnalyzer {
 				// System.out.println("Looking at MC part "+ j + " rel momDiff: " + ((mom-momMC)/momMC));
 			//	if (Math.abs(mom - momMC) < 0.025 * momMC && Math.abs(theta - thetaMC) < 1.0 && Math.abs(phi - phiMC) < 5)
 				//let's increase this
-				if (Math.abs(mom - momMC) < 0.05 * momMC && Math.abs(theta - thetaMC) < 2.0 && Math.abs(phi - phiMC) < 10)
+				if (Math.abs(mom - momMC) < 0.2 * momMC && Math.abs(theta - thetaMC) < 2.0 && Math.abs(phi - phiMC) < 10)
 				{
 					if (Math.abs(mom - momMC) < minMomDiff) {
 						minMomDiff = Math.abs(mom - momMC);
