@@ -28,6 +28,8 @@ import java.util.Arrays;
 
 public class SimpleAnalyzer {
 
+	public static int debugEvent=51672129;
+	
 	protected H1F hLambdaMass;
 	protected H1F hLambdaMassXfCut;
 	protected H1F hLambdaXf;
@@ -152,10 +154,12 @@ public class SimpleAnalyzer {
 		reader= new HipoDataSource();
 		//for debugging, use eventbuilder
 		NovelBaseFitter.useStefanElectronCuts=true;
-		NovelBaseFitter.useStefanHadronCuts=false;
+		NovelBaseFitter.useStefanHadronCuts=true;
 		NovelBaseFitter.useStefanPIDCuts=false;
+		NovelBaseFitter.noVertexCut=true;
 		//for haruts mc
 		NovelBaseFitter.useTimeBasedTracks=false;
+		
 		
 		
 		m_numGoodFilterEvts=0;
@@ -215,7 +219,14 @@ public class SimpleAnalyzer {
 		int numLambdas=0;
 		
 		// define fitter class, argument is the beam energy (GeV)
+		if(isMC) {
+			 novel_fitter = new NovelBaseFitter(10.6,true,false);
+		}
+		else
+		{
 		 novel_fitter = new NovelBaseFitter(10.6,false,false);
+		}
+		 novel_fitter.debugEvent=debugEvent;
 		//novel_fitter = new NovelBaseFitter(10.6, true, true);
 		 if(isMC)
 			 novel_fitterMC = new NovelBaseFitter(10.6, true, true);
@@ -280,11 +291,24 @@ public class SimpleAnalyzer {
 				// novel_fitter.Walt);
 					
 				this.m_numEventsWithBanks++;
-				
+				if(novel_fitter.getEvtNumber()==debugEvent)
+				{
+					System.out.println("found our event, checking!! (not filtered) "+ debugEvent);
+					System.out.println("count: (not filtered)"+ generic_Event.count());
+				}
 				//numLambdas+=novel_fitter.getNumLambda();
 				//System.out.println("found2 " + novel_fitter.getNumLambda());
+				for (int i = 0; i < generic_Event.count(); i++) 	
+				{
+					MyParticle part = (MyParticle) generic_Event.getParticle(i);
+					if(novel_fitter.getEvtNumber()==debugEvent)
+						System.out.println("found pid "+ part.pid());
+				}
 				if (filter.isValid(generic_Event) == true) { // apply filter to current event
 					// look at all particles
+
+					if(novel_fitter.getEvtNumber()==debugEvent)
+						System.out.println("found our event!! (after filtered)");
 					//System.out.println("valid event");
 					if(printDebug)
 					{
@@ -292,7 +316,6 @@ public class SimpleAnalyzer {
 						
 					}
 					//System.out.println("new valid event!!");
-					
 					
 					hQ2.fill(novel_fitter.getQ2());
 					hX.fill(novel_fitter.getX());
@@ -305,7 +328,8 @@ public class SimpleAnalyzer {
 					if(novel_fitter.getY()>0.8)
 						continue;
 					
-					
+					if(novel_fitter.getEvtNumber()==debugEvent)
+						System.out.println("found our event!!");
 					// grab electron
 				//	System.out.println("q2 w good");
 					Particle electron = generic_Event.getParticle("[11]");
@@ -534,6 +558,12 @@ public class SimpleAnalyzer {
 						 hZ.fill(pair.getZ());
 						 hDiPionMissingMass.fill(pair.getMissingMass());
 						 
+						 if(m_novel_fitter.getEvtNumber()==debugEvent)
+							{
+								System.out.println("found our run in analyzer..");
+								System.out.println("miss mass: "+pair.getMissingMass()+" z: " + pair.getZ());
+							}
+						 
 						if(pair.getMissingMass()>1.05 && pair.getZ()<0.95 )
 						{
 							evtFulfillsMissingMass=true;
@@ -546,7 +576,7 @@ public class SimpleAnalyzer {
 								}
 							}
 						}
-						else
+						else	
 						{
 							continue;
 						}

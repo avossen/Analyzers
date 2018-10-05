@@ -19,7 +19,7 @@ import org.jlab.io.base.DataEvent;
 import org.jlab.groot.fitter.ParallelSliceFitter;
 import org.jlab.groot.graphics.EmbeddedCanvas;
 import org.jlab.groot.math.F1D;
-import org.jlab.groot.math.Func2D;
+//import org.jlab.groot.math.Func2D;
 
 import org.jlab.groot.data.GraphErrors;
 
@@ -27,7 +27,7 @@ import org.jlab.groot.data.H1F;
 import org.jlab.groot.fitter.*;
 
 public class PairReader {
-
+static int debugEvent=51672129;
 	protected int numGoodEvents;
 	protected H1F phiRResolution;
 	protected H1F thetaResolution;
@@ -66,7 +66,8 @@ public class PairReader {
 	static int numPhiBins = 8;
 	static int numPhiBins2D = 8;
 	// this is driven by the run numbers
-	static int maxKinBins = 40;
+	static int numOutbendingRuns=68;
+	static int maxKinBins = 42+numOutbendingRuns;
 	int numPairs=0;
 	// arrays for asymmetry computation. Let's just to pi+pi for now
 	// so this is indexed in the kinBin, spin state, phi bin
@@ -158,7 +159,7 @@ public class PairReader {
 		phiBins2D = new ArrayList<Double>();
 		counts = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
 		countsG1P = new float[Binning.numKinBins][2][maxKinBins][numPhiBins];
-
+		
 		counts_2D = new float[Binning.numKinBins][2][maxKinBins][numPhiBins2D][numPhiBins2D];
 		countsG1P_2D = new float[Binning.numKinBins][2][maxKinBins][numPhiBins2D][numPhiBins2D];
 
@@ -413,26 +414,7 @@ public class PairReader {
 							}
 						}
 					}
-					//System.out.println("looking at run: " + runNumber);
-					if (!isMC) {
-						try {
-							hwpIn = getHWPInfo(runNumber);
-						} catch (Exception e) {
-
-							System.out.println("wrong runnumber " + runNumber);
-						}
-					}
-					if (runNumber > 4200 && !isMC) {
-						// continue;
-					}
-					if (runNumber < 3000 && !isMC) {
-						// continue;
-					}
-					if ((runNumber == 4020 || runNumber == 4301) && !isMC) {
-						// continue;
-					}
-					// so that we don't remove that run when plotting
-
+					
 					try {
 						// Reading the object from a file
 						ObjectInputStream in = null;
@@ -450,7 +432,53 @@ public class PairReader {
 						for (EventData evtData : m_asymData.eventData) {
 							// helicity has to be fixed per event
 							double rndSpin = 0.0;
+							runNumber=evtData.runNr;
+							//System.out.println("looking at run: " + runNumber);
+							if (!isMC) {
+								try {
+									hwpIn = getHWPInfo(runNumber);
+								} catch (Exception e) {
+
+									System.out.println("wrong runnumber " + runNumber);
+								}
+							}
 							
+							
+							//these seem to be outliers using 700 MeV as the cutoff for outliers
+							if(runNumber==4308||runNumber==4302 || runNumber==4032|| runNumber ==4013 || runNumber ==4016|| runNumber==4017|| runNumber==4069||runNumber==4071||runNumber==4305||runNumber==4015	)
+							{
+								//continue;
+							}
+							//this run seems to have bad chi2 (2.2)
+							if(runNumber==4071)
+							{
+							//	continue;
+							}
+							//use only runs marked as production runs
+							if(!isMC)
+							{
+							if(runNumber>4115||runNumber<3910)
+							{
+								continue;
+							}
+							}
+								//these seem to be bad with the 1 GeV cut
+							if(runNumber==4069 || runNumber==4305 || runNumber==4071 || runNumber==4069|| runNumber==4039|| runNumber==4027||runNumber==4038|| runNumber==4302|| runNumber==4032||runNumber==4013)
+							{
+								//continue;
+							}
+							if (runNumber > 4200 && !isMC) {
+								// continue;
+							}
+							if (runNumber < 3000 && !isMC) {
+								// continue;
+							}
+							if ((runNumber == 4020 || runNumber == 4301) && !isMC) {
+								// continue;
+							}
+							// so that we don't remove that run when plotting
+
+							//System.out.println("run nr: " + runNumber);
 							if (isMC) {
 								// even MC has helicity-->only the stuff from Hrayr, the other one not,
 								// so for now now need to set from random
@@ -523,11 +551,13 @@ public class PairReader {
 							numEvts[runBin] += 1;
 
 							numGoodEvents++;
-							if(evtData.pairData.size()>=1)
+							if(evtData.eventNr==debugEvent)
 							{
-								System.out.print("event nr " + evtData.eventNr+ " runnr "+evtData.runNr);
-								System.out.println(" Q2 " + evtData.Q2+ " y "+evtData.y +" x "+evtData.x);
+								System.out.println("found event!!\n");
 							}
+							
+							
+							boolean foundGoodPair=false;
 							for (HadronPairData pairData : evtData.pairData) {
 								theta1.fill(pairData.theta1);
 								theta2.fill(pairData.theta2);
@@ -535,22 +565,25 @@ public class PairReader {
 								phi1.fill(pairData.phi1);
 								phi2.fill(pairData.phi2);
 								if (pairData.theta1 < 0.17 || pairData.theta2 < 0.17) {
-									//continue;
-								}
-								// acceptance of forward detector
-								if (pairData.theta1 > 0.52 || pairData.theta2 > 0.52) {
-									//continue;
-								}
-								
-								float E1=sqrt(pairData.mom1*pairData.mom1+0.14*0.14);
-								float E2=sqrt(pairData.mom2*pairData.mom2+0.14*0.14);
-								if (pairData.mom1 < 1.0 || pairData.mom2 < 1.0) {
+								//if (pairData.theta1 < 0.087 || pairData.theta2 < 0.087) {
 									continue;
 								}
+								// acceptance of forward detector
+								if (pairData.theta1 > 0.5236 || pairData.theta2 > 0.5236) {
+									//continue;
+								}
 								
-								
-								
-
+								//float E1=Math.sqrt((double)(pairData.mom1*pairData.mom1+0.14*0.14));
+								//float E2=Math.sqrt((double)(pairData.mom2*pairData.mom2+0.14*0.14));
+								//System.out.println("found track with mom: "+pairData.mom1 + " "+ pairData.mom2);
+								if (pairData.mom1 <1.0|| pairData.mom2 < 1.0) {
+									//System.out.println("found track with mom: "+pairData.mom1 + " "+ pairData.mom2);
+									continue;
+								}
+								if(pairData.M< 0.8)	
+								{
+								 //continue;
+								}
 								hXf.fill(pairData.xF);
 								hZ.fill(pairData.z);
 								hM.fill(pairData.M);
@@ -571,14 +604,14 @@ public class PairReader {
 								///Debug print
 								System.out.print("z1: " + z1 + " z2 "+z2);
 								System.out.println(" pion1 mom: "+ pairData.mom1+" pion2 mom: " +pairData.mom2);
-									System.out.println("\n");
+									
 						
 								///--->end
 								// if(pairData.M<0.7)
 								// continue;
 								numPairs++;
 								double weight = 1.0;
-
+								foundGoodPair=true;
 								if (pairData.hasMC) {
 									weight = getWeight(pairData.matchingMCPair, rndSpin);
 								}
@@ -682,7 +715,14 @@ public class PairReader {
 								}
 								// System.out.println("looking at hadron pair with z: "+ pairData.z);
 							}
+							if(foundGoodPair)
+							{
+								System.out.print("event nr " + evtData.eventNr+ " runnr "+evtData.runNr);
+								System.out.println(" Q2 " + evtData.Q2+ " y "+evtData.y +" x "+evtData.x);
+								System.out.println("\n");
+							}
 						}
+						
 						in.close();
 						file.close();
 
@@ -707,6 +747,64 @@ public class PairReader {
 	}
 
 	
+	void writeH2ToFile(H2F h2)
+	{
+		String filename=h2.getName()+".txt";
+	
+		Writer writer=null;	
+		try 
+		{
+		writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 
+		writer.write(h2.getXAxis().getNBins()+" "+h2.getYAxis().getNBins()+" ");
+		writer.write(h2.getXAxis().min()+" "+h2.getYAxis().min()+" ");
+		writer.write(h2.getXAxis().max()+" "+h2.getYAxis().max()+" ");
+		for(int i=0;i<h2.getXAxis().getNBins();i++)
+		{
+			for(int j=0;j<h2.getXAxis().getNBins();j++)
+			{
+				double val=h2.getBinContent(i,j);
+				writer.write(Float.toString((float)val)+" ");	
+			}
+		}
+		writer.write("\n");
+		}
+		catch(IOException ex)
+		{
+			
+		}
+		finally
+		{
+			try {writer.close();} catch (Exception ex) {/*ignore*/}
+		}
+		
+		
+	}
+	void writeH1ToFile(H1F h1)
+	{
+		String filename=h1.getName()+".txt";
+		Writer writer=null;
+		try 
+		{
+		writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 
+		writer.write(h1.getXaxis().getNBins()+" ");
+		writer.write(h1.getXaxis().min()+" "+h1.getXaxis().max()+" ");
+		for(int i=0;i<h1.getXaxis().getNBins();i++)
+		{
+			double val=h1.getBinContent(i);
+			writer.write(Float.toString((float)val)+" ");	
+		}
+		writer.write("\n");
+		}
+		catch(IOException ex)
+		{
+			
+		}
+		finally
+		{
+			try {writer.close();} catch (Exception ex) {/*ignore*/}
+		}
+	}
+	
 	void dump2DToFile(boolean isG1P)
 	{
 		String filename;
@@ -728,9 +826,7 @@ public class PairReader {
 		}
 		try 
 		{
-			writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 
-			
-			
+			writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 			
 			for (Binning binningType : EnumSet.allOf(Binning.class)) {
 				writer.write(binningType.getBinningName()+" "+Integer.toString(binningType.getNumBins())+" "+Integer.toString(numPhiBins)+" ");
 				//dump mean values for each kin bin
@@ -1074,8 +1170,8 @@ public class PairReader {
 		}
 
 		GraphErrors g = new GraphErrors(title, m_xVals, m_vals, m_xValErrs, m_valErrs);
-		g.setTitleY("Asymmetry");
-		g.setTitleX("something");
+		g.setTitleY(title);
+		g.setTitleX("kinematics");
 
 		EmbeddedCanvas c1 = new EmbeddedCanvas();
 		c1.setSize(800, 600);
@@ -1114,7 +1210,7 @@ public class PairReader {
 
 	double getWeight(HadronPairData data, double rndSpin) {
 		double weight = 1.0;
-		double asym = 0.2;
+		double asym = 0.0;
 		double sign = 1.0;
 
 		if (rndSpin < 0)

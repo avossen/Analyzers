@@ -25,7 +25,7 @@ RunBinning(3);
 		//z binning
 		if(iBin==1)
 		{
-			bins.add(0.3);
+			bins.add(0.4);
 			bins.add(0.6);
 			bins.add(1.2);
 		}
@@ -40,6 +40,13 @@ RunBinning(3);
 		//runNumber
 		if(iBin==3)
 		{
+			//outbending
+			for(int i=3910;i<3978;i++)
+			{
+				bins.add((double)i);
+			}
+			
+			
 			bins.add(4013.0);
 			bins.add(4014.0);
 			bins.add(4015.0);
@@ -63,8 +70,16 @@ RunBinning(3);
 			bins.add(4044.0);
 			bins.add(4050.0);
 			bins.add(4053.0);
+			bins.add(4060.0);
+			bins.add(4061.0);
 			bins.add(4067.0);
+			bins.add(4068.0);
 			bins.add(4069.0);
+			bins.add(4070.0);
+			bins.add(4071.0);
+			bins.add(4073.0);
+			bins.add(4074.0);
+			bins.add(4075.0);
 			bins.add(4078.0);
 			bins.add(4301.0);
 			bins.add(4302.0);
