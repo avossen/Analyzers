@@ -47,7 +47,8 @@ static int debugEvent=51672129;
 
 	protected H1F hZ;
 	protected H1F hXf;
-
+protected H1F hX;	
+protected H1F hQ2;
 	protected H1F hM;
 
 	protected H1F hAsymDistVsRun;
@@ -104,6 +105,8 @@ static int debugEvent=51672129;
 	protected H1F phi2;
 
 	protected float[][] meanWy;
+	protected float[][][] meanWy1D;
+	protected float[][][][] meanWy2D;
 	protected float[][][] kinCount;
 
 	protected ArrayList<Double> phiBins;
@@ -142,6 +145,8 @@ static int debugEvent=51672129;
 		hWy = new H1F("Wy", "Wy", 100, -0.3, 1.2);
 		hZ = new H1F("Z", "Z", 100, 0, 1.0);
 		hM = new H1F("M", "M", 100, 0, 3.0);
+		hX=new H1F("x","x",300,0,1.0);
+		hQ2=new H1F("Q2","Q2",300,1.0,10.0);
 		hAsymDistVsRun = new H1F("asymDistVsRun", "asymDistVsRun", 20, -5, 5);
 		hAsymDistVsRunG1P = new H1F("asymDistVsRunG1P", "asymDistVsRunG1P", 20, -5, 5);
 		hXf = new H1F("xF", "xF", 100, -1.0, 1.0);
@@ -182,6 +187,8 @@ static int debugEvent=51672129;
 		meanM = new double[Binning.numKinBins][maxKinBins];
 
 		meanWy = new float[Binning.numKinBins][maxKinBins];
+		meanWy1D = new float[Binning.numKinBins][maxKinBins][numPhiBins];
+		meanWy2D = new float[Binning.numKinBins][maxKinBins][numPhiBins2D][numPhiBins2D];
 		// also needed for relative luminosity
 		kinCount = new float[Binning.numKinBins][2][maxKinBins];
 
@@ -323,6 +330,15 @@ static int debugEvent=51672129;
 		canKin.draw(this.hWy);
 		canKin.save("diHadKins.png");
 
+		this.writeH2ToFile(this.hQ2VsX);
+		writeH1ToFile(this.hM);
+		writeH1ToFile(this.hXf);
+		writeH1ToFile(this.hX);
+		writeH1ToFile(this.hQ2);
+		writeH1ToFile(this.hZ);
+		writeH2ToFile(this.hQ2VsX);
+		
+		
 		// fit with gaussian
 		F1D fG = new F1D("fG", "[amp]*gaus(x,[mean],[sigma])", -5.0, 5.0);
 		// Func2D f2G = new Func2D( ("fG","[amp]*gaus(x,[mean],[sigma])", -5.0, 5.0);
@@ -535,13 +551,19 @@ static int debugEvent=51672129;
 								}
 							}
 							//System.out.println("helicity: " + helicityIndex);
-							hQ2VsX.fill(evtData.x, evtData.Q2);
+						
 							// kinematic factor W(y) (asymmetry is ~W(y) x e(x)
 							double Wy = 0;
 							if (evtData.y > 0)
+							{
 								Wy = 2 * evtData.y * Math.sqrt(1 - evtData.y);
+								//and divide by A(y)
+								Wy=Wy/(1-evtData.y+evtData.y*evtData.y/2);
+							}
 							else
+							{
 								continue;
+							}
 
 							hY.fill(evtData.y);
 							hWy.fill(Wy);
@@ -570,8 +592,9 @@ static int debugEvent=51672129;
 								}
 								// acceptance of forward detector
 								if (pairData.theta1 > 0.5236 || pairData.theta2 > 0.5236) {
-									//continue;
+									continue;
 								}
+								
 								
 								//float E1=Math.sqrt((double)(pairData.mom1*pairData.mom1+0.14*0.14));
 								//float E2=Math.sqrt((double)(pairData.mom2*pairData.mom2+0.14*0.14));
@@ -580,13 +603,12 @@ static int debugEvent=51672129;
 									//System.out.println("found track with mom: "+pairData.mom1 + " "+ pairData.mom2);
 									continue;
 								}
-								if(pairData.M< 0.8)	
+								
+								if(pairData.M< 0.9)	
 								{
-								 //continue;
+								  continue;
 								}
-								hXf.fill(pairData.xF);
-								hZ.fill(pairData.z);
-								hM.fill(pairData.M);
+								
 								// System.out.println("helicity: " + evtData.beamHelicity);
 								if (pairData.z < 0.2 || pairData.xF < 0)
 								{
@@ -601,6 +623,12 @@ static int debugEvent=51672129;
 								{
 									continue;
 								}
+								hXf.fill(pairData.xF);
+								hZ.fill(pairData.z);
+								hM.fill(pairData.M);
+								hX.fill(evtData.x);
+								hQ2.fill(evtData.Q2);
+								hQ2VsX.fill(evtData.x, evtData.Q2);
 								///Debug print
 								System.out.print("z1: " + z1 + " z2 "+z2);
 								System.out.println(" pion1 mom: "+ pairData.mom1+" pion2 mom: " +pairData.mom2);
@@ -656,6 +684,8 @@ static int debugEvent=51672129;
 
 									kinCount[binningType.binType][helicityIndex][iBin] += weight;
 									meanWy[binningType.binType][iBin] += Wy * weight;
+									meanWy1D[binningType.binType][iBin][phiBin] += Wy * weight;
+									meanWy2D[binningType.binType][iBin][phiBin2D][phiHBin2D] += Wy * weight;
 									meanQ2[binningType.binType][iBin] += evtData.Q2 * weight;
 									meanPt[binningType.binType][iBin] += pairData.pTBreit * weight;
 									meanM[binningType.binType][iBin] += pairData.M * weight;
@@ -755,9 +785,10 @@ static int debugEvent=51672129;
 		try 
 		{
 		writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8")); 
-		writer.write(h2.getXAxis().getNBins()+" "+h2.getYAxis().getNBins()+" ");
-		writer.write(h2.getXAxis().min()+" "+h2.getYAxis().min()+" ");
-		writer.write(h2.getXAxis().max()+" "+h2.getYAxis().max()+" ");
+		writer.write(h2.getXAxis().getNBins()+" ");
+		writer.write(h2.getXAxis().min()+" "+h2.getXAxis().max()+" ");
+		writer.write(h2.getYAxis().getNBins()+" ");
+		writer.write(h2.getYAxis().min()+" "+h2.getYAxis().max()+" ");
 		for(int i=0;i<h2.getXAxis().getNBins();i++)
 		{
 			for(int j=0;j<h2.getXAxis().getNBins();j++)
@@ -851,8 +882,12 @@ static int debugEvent=51672129;
 					writer.write(Float.toString(r)+" ");
 					for (int iAngBin = 0; iAngBin < numPhiBins; iAngBin++) {
 						for (int iAngBin2 = 0; iAngBin2 < numPhiBins; iAngBin2++) {	
+							float wyFactor2D=meanWy2D[binningType.binType][iKinBin][iAngBin][iAngBin2];
+							float normFactor=loc_counts[binningType.getBinType()][0][iKinBin][iAngBin][iAngBin2]+loc_counts[binningType.getBinType()][1][iKinBin][iAngBin][iAngBin2];
+							writer.write(Float.toString(wyFactor2D/normFactor));
+							writer.write(" ");
 							for(int ipol=0;ipol<2;ipol++)
-							{
+							{		
 								writer.write(Float.toString(loc_counts[binningType.getBinType()][ipol][iKinBin][iAngBin][iAngBin2]));
 								writer.write(" ");
 							}
